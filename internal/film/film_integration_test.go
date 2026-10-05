@@ -1,6 +1,8 @@
 package film_test
 
 import (
+	"fmt"
+	pngdec "image/png"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,6 +22,36 @@ func ffprobe(t *testing.T, file, entries string) string {
 	return strings.TrimSpace(string(out))
 }
 
+// blankFirstFrame reports whether the page area of the first frame is a
+// single colour.
+func blankFirstFrame(t *testing.T, mp4 string, w, h int) bool {
+	t.Helper()
+	png := filepath.Join(t.TempDir(), "first.png")
+	crop := fmt.Sprintf("crop=%d:%d:0:0", w, h)
+	if out, err := exec.Command("ffmpeg", "-v", "error", "-i", mp4, "-frames:v", "1", "-vf", crop, png).CombinedOutput(); err != nil {
+		t.Fatalf("ffmpeg: %v\n%s", err, out)
+	}
+	f, err := os.Open(png)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	img, err := pngdec.Decode(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := img.Bounds()
+	first := img.At(b.Min.X, b.Min.Y)
+	for y := b.Min.Y; y < b.Max.Y; y += 4 {
+		for x := b.Min.X; x < b.Max.X; x += 4 {
+			if img.At(x, y) != first {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 func TestFilmWritesVideoAndChapters(t *testing.T) {
 	requireTools(t)
 	app, mail := newApps(t)
@@ -30,6 +62,9 @@ func TestFilmWritesVideoAndChapters(t *testing.T) {
 	}
 
 	mp4 := filepath.Join(dir, "demo.mp4")
+	if blankFirstFrame(t, mp4, s.Viewport.Width, s.Viewport.Height) {
+		t.Error("the video starts on a blank page: the pre-roll must cut the app's loading")
+	}
 	if height := ffprobe(t, mp4, "stream=height"); height != strconv.Itoa(s.Viewport.Height+film.BandHeight) {
 		t.Errorf("height = %s, want %d", height, s.Viewport.Height+film.BandHeight)
 	}

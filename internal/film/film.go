@@ -32,22 +32,39 @@ func Film(s *scenario.Scenario, outDir string) error {
 	defer ses.close()
 	r := &runner{s: s, page: ses.page, filming: true}
 
+	// Pre-roll: when step 1 opens with `open`, the app loads off camera and
+	// the video is cut from the moment it shows, not from the blank page.
+	steps := s.Steps
+	var offset time.Duration
+	if first := steps[0]; len(first.Do) > 0 && first.Do[0].Kind == scenario.Open {
+		if err := r.do(first.Do[0]); err != nil {
+			return &StepError{Step: 1, Caption: first.Caption, Action: first.Do[0].String(), Err: err}
+		}
+		if err := ses.page.WaitForLoadState(playwright.PageWaitForLoadStateOptions{State: playwright.LoadStateNetworkidle}); err != nil {
+			return &StepError{Step: 1, Caption: first.Caption, Action: first.Do[0].String(), Err: err}
+		}
+		offset = time.Since(ses.t0)
+		first.Do = first.Do[1:]
+		steps = append([]scenario.Step{first}, steps[1:]...)
+	}
+	since := func() time.Duration { return time.Since(ses.t0) - offset }
+
 	// starts[2k] is when step k's caption appears, starts[2k+1] when its
 	// "you should see" does.
 	var starts []time.Duration
 	var chapters []Chapter
-	for i, st := range s.Steps {
-		at := time.Since(ses.t0)
+	for i, st := range steps {
+		at := since()
 		starts = append(starts, at)
 		chapters = append(chapters, Chapter{N: i + 1, Check: st.Check, At: at, Caption: st.Caption, Expect: st.Expect})
 		r.pause(ReadTime(st.Caption))
 		if err := r.runStep(i+1, st); err != nil {
 			return err
 		}
-		starts = append(starts, time.Since(ses.t0))
+		starts = append(starts, since())
 		r.pause(HoldTime(st.Expect))
 	}
-	end := time.Since(ses.t0)
+	end := since()
 
 	video := ses.page.Video()
 	if err := ses.ctx.Close(); err != nil {
@@ -84,7 +101,7 @@ func Film(s *scenario.Scenario, outDir string) error {
 	}
 
 	filter := Filter(s.Viewport.Width, s.Viewport.Height, windows)
-	if err := assemble(raw, pngs, filter, filepath.Join(outDir, "demo.mp4"), len(windows)); err != nil {
+	if err := assemble(raw, offset, pngs, filter, filepath.Join(outDir, "demo.mp4"), len(windows)); err != nil {
 		return err
 	}
 	return os.WriteFile(filepath.Join(outDir, "chapters.md"), []byte(Chapters(s.Title, chapters)), 0o644)

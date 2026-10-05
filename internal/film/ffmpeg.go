@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 // Window is the time span, in seconds, during which a caption image shows.
@@ -22,9 +23,10 @@ func Filter(width, height int, windows []Window) string {
 	return b.String()
 }
 
-// assemble writes the mp4: H.264, yuv420p, faststart.
-func assemble(raw string, pngs []string, filter, out string, last int) error {
-	args := []string{"-y", "-loglevel", "error", "-i", raw}
+// assemble writes the mp4: H.264, yuv420p, faststart. The raw video is cut
+// before skip (the pre-roll), so its time 0 is the first step's caption.
+func assemble(raw string, skip time.Duration, pngs []string, filter, out string, last int) error {
+	args := []string{"-y", "-loglevel", "error", "-ss", fmt.Sprintf("%.3f", skip.Seconds()), "-i", raw}
 	for _, p := range pngs {
 		args = append(args, "-i", p)
 	}

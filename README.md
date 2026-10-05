@@ -121,6 +121,10 @@ Gestures are paced for a human eye: the cursor travels to its target in
 effect stays 0.7 s before the next action; typing takes 70 ms per
 character. `speed` scales these gestures only, never the captions.
 
+When step 1 starts with `open`, that page loads off camera: the video
+starts once the app shows (network idle), not on a blank page, and the
+captions and chapters are shifted accordingly.
+
 ## Rules enforced by `check`
 
 They are validation only, no browser needed, and they exist so a film cannot
