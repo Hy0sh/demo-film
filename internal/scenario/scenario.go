@@ -69,7 +69,7 @@ func Parse(data []byte) (*Scenario, error) {
 		s.Labels.Step = "Step"
 	}
 	if s.Labels.See == "" {
-		s.Labels.See = "You should see"
+		s.Labels.See = "You should see:"
 	}
 	if s.Labels.Check == "" {
 		s.Labels.Check = "check"

@@ -47,7 +47,7 @@ func TestValidScenario(t *testing.T) {
 		t.Fatalf("valid scenario rejected: %s", got)
 	}
 	s, _ := Parse([]byte(valid))
-	if s.Viewport.Width != 1440 || s.Viewport.Height != 900 || s.Timeout != 15 || s.Labels.See != "You should see" {
+	if s.Viewport.Width != 1440 || s.Viewport.Height != 900 || s.Timeout != 15 || s.Labels.See != "You should see:" {
 		t.Errorf("defaults not applied: %+v", s)
 	}
 }

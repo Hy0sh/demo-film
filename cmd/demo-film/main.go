@@ -7,11 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/mxschmitt/playwright-go"
 	"github.com/spf13/cobra"
 
 	"github.com/Hy0sh/demo-film/internal/film"
+	"github.com/Hy0sh/demo-film/internal/preflight"
 	"github.com/Hy0sh/demo-film/internal/scenario"
 	"github.com/Hy0sh/demo-film/internal/version"
 )
@@ -32,7 +34,7 @@ func newRoot() *cobra.Command {
 	}
 	root.SetVersionTemplate("demo-film {{.Version}}\n")
 	root.SetErr(os.Stderr)
-	root.AddCommand(checkCmd(), rehearseCmd(), installCmd())
+	root.AddCommand(checkCmd(), rehearseCmd(), filmCmd(), installCmd())
 	return root
 }
 
@@ -96,5 +98,30 @@ func rehearseCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVarP(&outDir, "out", "o", ".", "directory for the failure screenshot")
+	return cmd
+}
+
+func filmCmd() *cobra.Command {
+	var outDir string
+	cmd := &cobra.Command{
+		Use:   "film <scenario.yaml>",
+		Short: "Record the demo: demo.mp4 with a caption band, and chapters.md",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			s, err := scenario.Load(args[0])
+			if err != nil {
+				return fail(err)
+			}
+			if err := preflight.FFmpeg(); err != nil {
+				return fail(err)
+			}
+			if err := film.Film(s, outDir); err != nil {
+				return fail(err)
+			}
+			fmt.Println(filepath.Join(outDir, "demo.mp4"))
+			return nil
+		},
+	}
+	cmd.Flags().StringVarP(&outDir, "out", "o", ".", "output directory")
 	return cmd
 }

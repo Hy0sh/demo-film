@@ -23,7 +23,7 @@ base_url: %s
 timeout: 5
 hide: ["#nothing"]
 locale: en
-labels: {step: "Étape", see: "Tu dois voir", check: "vérifie"}
+labels: {step: "Étape", see: "Tu dois voir :", check: "vérifie"}
 steps:
   - caption: Open the shop
     check: E1
