@@ -8,19 +8,12 @@ import (
 )
 
 func TestInitScript(t *testing.T) {
-	s := &scenario.Scenario{Locale: "fr", Hide: []string{".dev-overlay", "#toast"}}
-	js := InitScript(s)
-	for _, want := range []string{`localStorage.setItem("i18nextLng", "fr")`, `.dev-overlay{display:none!important}`, `__demo_cursor`} {
-		if !strings.Contains(js, want) {
-			t.Errorf("init script lacks %q", want)
-		}
+	js := InitScript(&scenario.Scenario{Locale: "fr", Hide: []string{".dev-overlay", "#toast"}})
+	if want := `({"locale":"fr","hide":[".dev-overlay","#toast"]});`; !strings.HasSuffix(strings.TrimSpace(js), want) {
+		t.Errorf("init script must call the overlay with %s, got tail %q", want, js[len(js)-80:])
 	}
-	// The locale is set before any overlay code.
-	if strings.Index(js, "i18nextLng") > strings.Index(js, "__demo_cursor") {
-		t.Error("the locale must be set first")
-	}
-	if strings.Contains(InitScript(&scenario.Scenario{}), "i18nextLng") {
-		t.Error("no locale, no localStorage write")
+	if want := `({"locale":"","hide":[]});`; !strings.HasSuffix(strings.TrimSpace(InitScript(&scenario.Scenario{})), want) {
+		t.Errorf("an empty scenario must pass %s", want)
 	}
 }
 
