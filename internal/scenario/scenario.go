@@ -24,9 +24,13 @@ type Scenario struct {
 	Locale   string   `yaml:"locale"`
 	Hide     []string `yaml:"hide"`
 	// Timeout is the budget of one action, in seconds.
-	Timeout int    `yaml:"timeout"`
-	Labels  Labels `yaml:"labels"`
-	Steps   []Step `yaml:"steps"`
+	Timeout int `yaml:"timeout"`
+	// Speed scales the gestures (cursor travel, pauses around actions,
+	// typing): 1 is the default, 0.5 twice as slow, 2 twice as fast.
+	// Caption read times are not affected.
+	Speed  float64 `yaml:"speed"`
+	Labels Labels  `yaml:"labels"`
+	Steps  []Step  `yaml:"steps"`
 }
 
 type Viewport struct {
@@ -64,6 +68,9 @@ func Parse(data []byte) (*Scenario, error) {
 	}
 	if s.Timeout == 0 {
 		s.Timeout = defaultTimeout
+	}
+	if s.Speed == 0 {
+		s.Speed = 1
 	}
 	if s.Labels.Step == "" {
 		s.Labels.Step = "Step"

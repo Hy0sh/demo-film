@@ -36,17 +36,19 @@ func TestFilmWritesVideoAndChapters(t *testing.T) {
 	if pix := ffprobe(t, mp4, "stream=pix_fmt"); pix != "yuv420p" {
 		t.Errorf("pix_fmt = %s", pix)
 	}
-	var floor float64
+	// Captions set the floor; each action may add up to one gesture pace.
+	var floor, gestures float64
 	for _, st := range s.Steps {
 		floor += (film.ReadTime(st.Caption) + film.HoldTime(st.Expect)).Seconds()
+		gestures += float64(len(st.Do)) * film.ActionPace(s.Speed).Seconds()
 	}
 	out, err := exec.Command("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", mp4).Output()
 	if err != nil {
 		t.Fatal(err)
 	}
 	dur, _ := strconv.ParseFloat(strings.TrimSpace(string(out)), 64)
-	if dur < floor || dur > floor+30 {
-		t.Errorf("duration %.1fs, want between %.1fs and %.1fs", dur, floor, floor+30)
+	if ceil := floor + gestures + 30; dur < floor || dur > ceil {
+		t.Errorf("duration %.1fs, want between %.1fs and %.1fs", dur, floor, ceil)
 	}
 
 	md, err := os.ReadFile(filepath.Join(dir, "chapters.md"))

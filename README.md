@@ -53,6 +53,7 @@ viewport: {width: 1440, height: 900}  # optional, this is the default; both even
 locale: fr                            # optional, see below
 hide: ["css selector", ...]           # optional, see below
 timeout: 15                           # optional, seconds per action
+speed: 1                              # optional, 0.25 to 4: gestures only (0.5 = twice as slow)
 labels:                               # optional, English defaults shown
   step: Step                          #   "Step 2/5"
   check: check                        #   "Step 2/5 · check E3"
@@ -114,6 +115,11 @@ Nothing is paused by hand. Per step, the caption is read for 60 ms per
 character (at least 2.5 s), and the "you should see" state is held for 60
 ms per character (at least 4 s); both capped at 9 s. The same scenario
 always films the same video.
+
+Gestures are paced for a human eye: the cursor travels to its target in
+0.7 s with a smooth start and stop, rests 0.6 s before the click, and the
+effect stays 0.7 s before the next action; typing takes 70 ms per
+character. `speed` scales these gestures only, never the captions.
 
 ## Rules enforced by `check`
 

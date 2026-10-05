@@ -60,6 +60,8 @@ func TestRules(t *testing.T) {
 		{"empty base_url", "base_url: http://localhost:3000", "base_url: ''", "base_url is empty"},
 		{"relative base_url", "base_url: http://localhost:3000", "base_url: localhost", "not an absolute URL"},
 		{"odd viewport", "title: Tour", "title: Tour\nviewport: {width: 1441, height: 900}", "must be even"},
+		{"speed too slow", "title: Tour", "title: Tour\nspeed: 0.1", "speed must be between"},
+		{"speed too fast", "title: Tour", "title: Tour\nspeed: 5", "speed must be between"},
 		{"empty caption", "caption: Open the app", "caption: ''", "caption is empty"},
 		{"missing expect", "    expect: the home page\n", "", "expect is empty"},
 		{"check without see", "    see: [Home]\n", "", "needs a non-empty see"},

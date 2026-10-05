@@ -10,10 +10,14 @@ import (
 	"github.com/Hy0sh/demo-film/internal/scenario"
 )
 
+// Pacing when filming, tuned for a human eye following the cursor.
 const (
 	pollEvery   = 100 * time.Millisecond
-	typingDelay = 60.0 // ms per character, when filming
-	arrivalWait = 350 * time.Millisecond
+	typingDelay = 70.0 // ms per character
+	travelTime  = 700 * time.Millisecond
+	travelFrame = 20 * time.Millisecond
+	arrivalWait = 600 * time.Millisecond // the eye lands on the target before the click
+	afterAction = 700 * time.Millisecond // the effect is seen before the next gesture
 )
 
 // runner plays the actions of a scenario on a page. Filming adds the
@@ -22,6 +26,7 @@ type runner struct {
 	s       *scenario.Scenario
 	page    playwright.Page
 	filming bool
+	x, y    float64 // last cursor position, where the next travel starts
 }
 
 func (r *runner) timeout() time.Duration { return time.Duration(r.s.Timeout) * time.Second }
@@ -30,6 +35,17 @@ func (r *runner) pause(d time.Duration) {
 	if r.filming {
 		time.Sleep(d) // the recording runs meanwhile: the pause is the point
 	}
+}
+
+// gesture scales a gesture duration by the scenario's speed.
+func (r *runner) gesture(d time.Duration) time.Duration {
+	return time.Duration(float64(d) / r.s.Speed)
+}
+
+// ActionPace is the filming time one pointer action adds at that speed:
+// cursor travel, arrival wait and the pause after it.
+func ActionPace(speed float64) time.Duration {
+	return time.Duration(float64(travelTime+arrivalWait+afterAction) / speed)
 }
 
 // root is where lookups start: the page, or the last open dialog.
@@ -91,15 +107,31 @@ func (r *runner) travel(loc playwright.Locator) error {
 	if err != nil || box == nil {
 		return fmt.Errorf("element has no box: %v", err)
 	}
-	steps := 1
+	tx, ty := box.X+box.Width/2, box.Y+box.Height/2
 	if r.filming {
-		steps = 20
-	}
-	if err := r.page.Mouse().Move(box.X+box.Width/2, box.Y+box.Height/2, playwright.MouseMoveOptions{Steps: &steps}); err != nil {
+		// Playwright's Steps option sends every step at once: animate in real time.
+		n := max(int(r.gesture(travelTime)/travelFrame), 1)
+		for i := 1; i <= n; i++ {
+			k := easeInOut(float64(i) / float64(n))
+			if err := r.page.Mouse().Move(r.x+(tx-r.x)*k, r.y+(ty-r.y)*k); err != nil {
+				return err
+			}
+			time.Sleep(travelFrame)
+		}
+	} else if err := r.page.Mouse().Move(tx, ty); err != nil {
 		return err
 	}
-	r.pause(arrivalWait)
+	r.x, r.y = tx, ty
+	r.pause(r.gesture(arrivalWait))
 	return nil
+}
+
+// easeInOut maps linear progress in [0,1] to a smooth start and stop.
+func easeInOut(t float64) float64 {
+	if t < .5 {
+		return 2 * t * t
+	}
+	return 1 - (-2*t+2)*(-2*t+2)/2
 }
 
 func (r *runner) clickOn(loc playwright.Locator) error {
@@ -172,7 +204,7 @@ func (r *runner) do(a scenario.Action) error {
 		if err := loc.Fill(""); err != nil {
 			return err
 		}
-		return loc.PressSequentially(a.Value, playwright.LocatorPressSequentiallyOptions{Delay: playwright.Float(typingDelay)})
+		return loc.PressSequentially(a.Value, playwright.LocatorPressSequentiallyOptions{Delay: playwright.Float(typingDelay / r.s.Speed)})
 
 	case scenario.Select:
 		return r.selectOption(root, a)
@@ -354,6 +386,7 @@ func (r *runner) runStep(n int, st scenario.Step) error {
 		if err := r.do(a); err != nil {
 			return &StepError{Step: n, Caption: st.Caption, Action: a.String(), Err: err}
 		}
+		r.pause(r.gesture(afterAction))
 	}
 	if err := r.see(st.See); err != nil {
 		return &StepError{Step: n, Caption: st.Caption, Err: err}

@@ -57,6 +57,9 @@ func Validate(s *Scenario) []string {
 	if s.Timeout < 0 {
 		add("timeout must be positive")
 	}
+	if s.Speed < 0.25 || s.Speed > 4 {
+		add("speed must be between 0.25 and 4")
+	}
 	if len(s.Steps) == 0 {
 		add("steps is empty")
 	}
