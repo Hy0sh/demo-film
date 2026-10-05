@@ -147,4 +147,8 @@ func TestRehearseNamesTheFailingAction(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "step 4") || !strings.Contains(err.Error(), `click "No such button"`) {
 		t.Fatalf("want step 4 and the action, got %v", err)
 	}
+	// The miss lists what the screen offers, so the label is fixed from the error.
+	if !strings.Contains(err.Error(), `visible on this screen:`) || !strings.Contains(err.Error(), `"Open wizard"`) {
+		t.Errorf("want the visible names in the error, got %v", err)
+	}
 }

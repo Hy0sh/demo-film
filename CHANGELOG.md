@@ -6,6 +6,14 @@ bump carries new commands or new behaviour, a patch bump carries fixes.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-05
+
+### Added
+
+- A lookup that finds nothing now lists the names visible on the screen
+  (links, buttons, tabs, fields, labels) in its error: a wrong label is fixed
+  from the error alone, without exploring the app in a browser.
+
 ## [0.1.0] - 2026-10-05
 
 First version: film a web app demo headless from a YAML scenario.
@@ -32,5 +40,6 @@ First version: film a web app demo headless from a YAML scenario.
 - The video starts once the app shows: when step 1 starts with `open`, the
   page loads off camera and the blank page is cut.
 
-[Unreleased]: https://github.com/Hy0sh/demo-film/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Hy0sh/demo-film/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Hy0sh/demo-film/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Hy0sh/demo-film/releases/tag/v0.1.0
