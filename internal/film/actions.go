@@ -28,7 +28,7 @@ func (r *runner) timeout() time.Duration { return time.Duration(r.s.Timeout) * t
 
 func (r *runner) pause(d time.Duration) {
 	if r.filming {
-		r.page.WaitForTimeout(float64(d.Milliseconds()))
+		time.Sleep(d) // the recording runs meanwhile: the pause is the point
 	}
 }
 
