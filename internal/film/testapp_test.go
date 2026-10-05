@@ -65,7 +65,8 @@ func newApps(t *testing.T) (app, mail *httptest.Server) {
 	app = httptest.NewServer(am)
 	mail = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		fmt.Fprint(w, "<h1>Inbox</h1><p>Welcome mail</p>")
+		// The body sits in an iframe, as in a real mail catcher.
+		fmt.Fprint(w, `<h1>Inbox</h1><p>Welcome mail</p><iframe srcdoc="<p>Hello Ada, your order shipped</p>"></iframe>`)
 	}))
 	t.Cleanup(func() { app.Close(); mail.Close() })
 	return app, mail

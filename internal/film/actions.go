@@ -308,12 +308,24 @@ func (r *runner) popup(root playwright.Locator, a scenario.Action) error {
 	return nil
 }
 
-// see asserts that every text is visible.
+// see asserts that every text is visible, in the page or in one of its
+// frames (a mail catcher renders the message body in an iframe). Frames are
+// listed again on each poll, as an iframe may load after the step's actions.
 func (r *runner) see(texts []string) error {
-	root := r.page.Locator("body")
 	for _, t := range texts {
-		if _, err := r.find(r.timeout(), fmt.Sprintf("%q", t), r.byText(root, t)...); err != nil {
-			return fmt.Errorf("see: %w", err)
+		deadline := time.Now().Add(r.timeout())
+		for {
+			var cands []playwright.Locator
+			for _, f := range r.page.Frames() {
+				cands = append(cands, r.byText(f.Locator("body"), t)...)
+			}
+			if _, ok := r.firstVisible(0, cands...); ok {
+				break
+			}
+			if !time.Now().Before(deadline) {
+				return fmt.Errorf("see: nothing visible matched %q within %s", t, r.timeout())
+			}
+			time.Sleep(pollEvery)
 		}
 	}
 	return nil

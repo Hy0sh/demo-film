@@ -75,7 +75,7 @@ steps:
   - caption: Check the mail
     do:
       - open: %s
-    see: [Welcome mail]
+    see: [Welcome mail, "Hello Ada, your order shipped"]
     check: E2
     expect: the mail
 `, appURL, mailURL)
