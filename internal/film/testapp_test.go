@@ -18,6 +18,7 @@ const appHTML = `<!doctype html>
 <nav>
   <button id="parent" onclick="document.getElementById('sub').hidden=!document.getElementById('sub').hidden">Settings</button>
   <ul id="sub" hidden><li><a href="#profile" onclick="show('Profile page')">Profile</a></li></ul>
+  <a href="#decoy" onclick="show('Decoy page')">Profile settings</a>
 </nav>
 <h1>Home</h1>
 <p id="state"></p>

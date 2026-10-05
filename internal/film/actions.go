@@ -222,14 +222,12 @@ func (r *runner) clickTarget(root playwright.Locator, a scenario.Action) (playwr
 	return r.find(to, fmt.Sprintf("%q", a.Text), r.byText(root, a.Text)...)
 }
 
-// entry is a navigation entry: a link or a button, by accessible name.
+// entry is a navigation entry: a link or a button, by exact accessible name.
+// No substring fallback: a hidden "Settings" child would otherwise match a
+// visible "General settings" entry elsewhere in the menu.
 func (r *runner) entry(root playwright.Locator, name string) []playwright.Locator {
-	var out []playwright.Locator
-	for _, exact := range []bool{true, false} {
-		opts := playwright.LocatorGetByRoleOptions{Name: name, Exact: playwright.Bool(exact)}
-		out = append(out, root.GetByRole("link", opts).Or(root.GetByRole("button", opts)))
-	}
-	return out
+	opts := playwright.LocatorGetByRoleOptions{Name: name, Exact: playwright.Bool(true)}
+	return []playwright.Locator{root.GetByRole("link", opts).Or(root.GetByRole("button", opts))}
 }
 
 // menu clicks the child entry, opening its parent first when it is hidden.
