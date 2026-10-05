@@ -24,7 +24,13 @@ First version: film a web app demo headless from a YAML scenario.
 - `demo-film install`: installs the Playwright driver and Chromium.
 - A closed vocabulary of actions: `open`, `menu`, `click`, `fill`, `select`,
   `press`, `hover`, `wait`, `popup`, `confirm`, and the `within: dialog`
-  modifier.
+  modifier. Menu entries match by exact name; `see` texts are also looked
+  for in the page's frames (a mail catcher's message body).
+- Gestures paced for a human eye (cursor travel, rest before the click,
+  pause after each action, visible typing), scaled by the scenario's
+  `speed` (0.25 to 4).
+- The video starts once the app shows: when step 1 starts with `open`, the
+  page loads off camera and the blank page is cut.
 
 [Unreleased]: https://github.com/Hy0sh/demo-film/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/Hy0sh/demo-film/releases/tag/v0.1.0
