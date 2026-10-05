@@ -145,3 +145,9 @@ func TestFieldRankAndLabel(t *testing.T) {
 		t.Errorf("click shapes: %+v %+v %+v", do[4], do[5], do[9])
 	}
 }
+
+func TestExampleScenarioIsValid(t *testing.T) {
+	if _, err := Load("../../examples/shop.yaml"); err != nil {
+		t.Fatal(err)
+	}
+}

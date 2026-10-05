@@ -1,0 +1,54 @@
+# A tour of a neutral shop app served on localhost:3000.
+title: Shop tour
+base_url: http://localhost:3000
+locale: en
+hide: [".dev-toolbar"]
+labels:
+  step: Step
+  see: "You should see:"
+  check: check
+steps:
+  - caption: Sign in as the shop manager.
+    do:
+      - open: /login
+      - fill: {field: Email, value: manager@example.com}
+      - fill: {field: password, value: demo1234}
+      - press: Enter
+    see: [Dashboard]
+    expect: the dashboard, signed in as the manager.
+
+  - caption: Open Catalogue > Products, then edit the product "Desk lamp".
+    check: E1
+    do:
+      - menu: [Catalogue, Products]
+      - click: {row: Desk lamp, button: {nth: -2}}
+    see: [Edit product]
+    expect: the "Edit product" dialog of the desk lamp.
+
+  - caption: Change the category and go to the next page of the form.
+    check: E1
+    do:
+      - select: {field: Category, option: Lighting}
+        within: dialog
+      - click: Next
+        within: dialog
+      - wait: Pricing
+        within: dialog
+    see: [Pricing]
+    expect: the pricing page of the form, with the category kept.
+
+  - caption: Leave the form without saving.
+    do:
+      - click: Close
+        within: dialog
+      - confirm: Discard
+    see: [Products]
+    expect: the products list, nothing was saved.
+
+  - caption: Open the order mail in the mail catcher.
+    check: E2
+    do:
+      - open: http://localhost:8025
+      - click: "Your order is confirmed"
+    see: ["Your order is confirmed"]
+    expect: the confirmation mail, in another tab of the mail catcher.
