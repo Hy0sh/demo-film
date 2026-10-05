@@ -1,6 +1,7 @@
 package film
 
 import (
+	_ "embed"
 	"fmt"
 	"strings"
 	"time"
@@ -78,9 +79,40 @@ func (r *runner) firstVisible(timeout time.Duration, cands ...playwright.Locator
 func (r *runner) find(timeout time.Duration, what string, cands ...playwright.Locator) (playwright.Locator, error) {
 	loc, ok := r.firstVisible(timeout, cands...)
 	if !ok {
-		return nil, fmt.Errorf("nothing visible matched %s within %s", what, timeout)
+		return nil, fmt.Errorf("nothing visible matched %s within %s%s", what, timeout, r.suggest())
 	}
 	return loc, nil
+}
+
+//go:embed names.js
+var namesJS string
+
+// maxSuggestions keeps a failure message readable on a busy screen.
+const maxSuggestions = 40
+
+// suggest lists the names a scenario could aim at on the current screen, so
+// a wrong label is fixed from the error alone, without exploring the app.
+func (r *runner) suggest() string {
+	v, err := r.page.Evaluate(namesJS)
+	if err != nil {
+		return ""
+	}
+	list, _ := v.([]interface{})
+	var names []string
+	for _, n := range list {
+		if s, ok := n.(string); ok {
+			names = append(names, fmt.Sprintf("%q", s))
+		}
+	}
+	if len(names) == 0 {
+		return ""
+	}
+	more := ""
+	if len(names) > maxSuggestions {
+		more = fmt.Sprintf(" (+%d more)", len(names)-maxSuggestions)
+		names = names[:maxSuggestions]
+	}
+	return "; visible on this screen: " + strings.Join(names, ", ") + more
 }
 
 func (r *runner) byText(root playwright.Locator, text string) []playwright.Locator {
