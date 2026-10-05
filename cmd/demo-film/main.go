@@ -8,9 +8,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/playwright-community/playwright-go"
+	"github.com/mxschmitt/playwright-go"
 	"github.com/spf13/cobra"
 
+	"github.com/Hy0sh/demo-film/internal/film"
 	"github.com/Hy0sh/demo-film/internal/scenario"
 	"github.com/Hy0sh/demo-film/internal/version"
 )
@@ -31,7 +32,7 @@ func newRoot() *cobra.Command {
 	}
 	root.SetVersionTemplate("demo-film {{.Version}}\n")
 	root.SetErr(os.Stderr)
-	root.AddCommand(checkCmd(), installCmd())
+	root.AddCommand(checkCmd(), rehearseCmd(), installCmd())
 	return root
 }
 
@@ -71,4 +72,29 @@ func installCmd() *cobra.Command {
 			return nil
 		},
 	}
+}
+
+func rehearseCmd() *cobra.Command {
+	var outDir string
+	cmd := &cobra.Command{
+		Use:   "rehearse <scenario.yaml>",
+		Short: "Run every step with no pause and no video, asserting each see",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			s, err := scenario.Load(args[0])
+			if err != nil {
+				return fail(err)
+			}
+			if err := os.MkdirAll(outDir, 0o755); err != nil {
+				return fail(err)
+			}
+			if err := film.Rehearse(s, outDir); err != nil {
+				return fail(err)
+			}
+			fmt.Printf("rehearsal ok: %d steps\n", len(s.Steps))
+			return nil
+		},
+	}
+	cmd.Flags().StringVarP(&outDir, "out", "o", ".", "directory for the failure screenshot")
+	return cmd
 }
