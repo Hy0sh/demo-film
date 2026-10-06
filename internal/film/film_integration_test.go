@@ -74,7 +74,7 @@ func TestFilmWritesVideoAndChapters(t *testing.T) {
 	// Captions set the floor; each action may add up to one gesture pace.
 	var floor, gestures float64
 	for _, st := range s.Steps {
-		floor += (film.ReadTime(st.Caption) + film.HoldTime(st.Expect)).Seconds()
+		floor += (film.ReadTime(st.Caption, s.Speed) + film.HoldTime(st.Expect, s.Speed)).Seconds()
 		gestures += float64(len(st.Do)) * film.ActionPace(s.Speed).Seconds()
 	}
 	out, err := exec.Command("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", mp4).Output()

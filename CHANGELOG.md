@@ -6,6 +6,13 @@ bump carries new commands or new behaviour, a patch bump carries fixes.
 
 ## [Unreleased]
 
+### Changed
+
+- `speed` now scales the whole video: caption read and hold times follow it
+  as well as the gestures (x2 = about twice as fast, x0.5 twice as slow),
+  with a 1.2 s floor so a caption stays readable. At `speed: 1` (the
+  default) nothing changes.
+
 ## [0.2.0] - 2026-10-05
 
 ### Added
