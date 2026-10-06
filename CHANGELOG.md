@@ -6,6 +6,14 @@ bump carries new commands or new behaviour, a patch bump carries fixes.
 
 ## [Unreleased]
 
+### Changed
+
+- `locale` now sets the words of the caption band and the cards too: `fr`
+  gives "Étape", "vérifie", "À l'écran :" and "plus tard", and `labels`
+  only overrides them. A French film whose labels left out `later` showed
+  "⏩ 1:23 later" in English. A language without words of its own still
+  gets English.
+
 ## [0.5.0] - 2026-10-07
 
 ### Added

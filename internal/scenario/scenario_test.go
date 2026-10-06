@@ -19,6 +19,27 @@ func problems(t *testing.T, yaml string) string {
 	return strings.Join(Validate(s), "\n")
 }
 
+func TestLocaleGivesTheBandsWords(t *testing.T) {
+	for _, c := range []struct {
+		yaml string
+		want Labels
+	}{
+		{"locale: fr", Labels{Step: "Étape", See: "À l'écran :", Check: "vérifie", Later: "plus tard"}},
+		{"locale: fr-FR", Labels{Step: "Étape", See: "À l'écran :", Check: "vérifie", Later: "plus tard"}},
+		{"locale: de", Labels{Step: "Step", See: "You should see:", Check: "check", Later: "later"}},
+		// labels override the locale's words one by one.
+		{"locale: fr\nlabels: {see: \"Tu dois voir :\"}", Labels{Step: "Étape", See: "Tu dois voir :", Check: "vérifie", Later: "plus tard"}},
+	} {
+		s, err := Parse([]byte(strings.Replace(valid, "title: Tour", "title: Tour\n"+c.yaml, 1)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if s.Labels != c.want {
+			t.Errorf("%q: labels %+v, want %+v", c.yaml, s.Labels, c.want)
+		}
+	}
+}
+
 func TestValidScenario(t *testing.T) {
 	if got := problems(t, valid); got != "" {
 		t.Fatalf("valid scenario rejected: %s", got)

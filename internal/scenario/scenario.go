@@ -58,12 +58,31 @@ type Viewport struct {
 	Height int `yaml:"height"`
 }
 
-// Labels are the words of the caption band, English unless overridden.
+// Labels are the words of the caption band and the cards, in the language
+// of `locale` unless overridden.
 type Labels struct {
 	Step  string `yaml:"step"`
 	See   string `yaml:"see"`
 	Check string `yaml:"check"`
 	Later string `yaml:"later"` // the card after a cut: "⏩ 2:14 later"
+}
+
+// localeLabels are the words each language of `locale` defaults to; a
+// scenario's labels override them one by one. A language not listed gets
+// English.
+var localeLabels = map[string]Labels{
+	"en": {Step: "Step", See: "You should see:", Check: "check", Later: "later"},
+	"fr": {Step: "Étape", See: "À l'écran :", Check: "vérifie", Later: "plus tard"},
+}
+
+// labelsFor returns the default words for a locale such as "fr" or "fr-FR".
+func labelsFor(locale string) Labels {
+	lang, _, _ := strings.Cut(strings.ToLower(locale), "-")
+	lang, _, _ = strings.Cut(lang, "_")
+	if l, ok := localeLabels[lang]; ok {
+		return l
+	}
+	return localeLabels["en"]
 }
 
 // Step is one caption, the actions it films, and what must be on screen after.
@@ -93,17 +112,18 @@ func Parse(data []byte) (*Scenario, error) {
 	if s.Speed == 0 {
 		s.Speed = 1
 	}
+	words := labelsFor(s.Locale)
 	if s.Labels.Step == "" {
-		s.Labels.Step = "Step"
+		s.Labels.Step = words.Step
 	}
 	if s.Labels.See == "" {
-		s.Labels.See = "You should see:"
+		s.Labels.See = words.See
 	}
 	if s.Labels.Check == "" {
-		s.Labels.Check = "check"
+		s.Labels.Check = words.Check
 	}
 	if s.Labels.Later == "" {
-		s.Labels.Later = "later"
+		s.Labels.Later = words.Later
 	}
 	if w := s.Watermark; w != nil {
 		if w.Position == "" {
