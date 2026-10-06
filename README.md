@@ -68,7 +68,9 @@ steps:
 
 Unknown keys are errors. `examples/shop.yaml` is a complete scenario.
 
-- `locale` sets `localStorage.i18nextLng` before any page script runs.
+- `locale` sets `localStorage.i18nextLng` before any page script runs, and
+  the browser's own language: `Intl`, `Accept-Language` and the native date
+  and month inputs follow it (`fr` shows 06/10/2026 and "octobre 2026").
 - `hide` injects `display: none !important` for those selectors during
   filming (dev toolbars, debug overlays).
 - `labels` lets a demo speak another language without hardcoding it, e.g.

@@ -44,7 +44,8 @@ steps:
       - press: Enter
       - fill: {field: password, value: secret}
       - fill: {field: 1, value: Ada Lovelace}
-    see: ["Submitted: lamp"]
+      - fill: {field: Start, value: "2026-10-06"}
+    see: ["Submitted: lamp", "Picked 2026-10-06"]
     expect: the search was submitted
   - caption: Use the table
     do:
@@ -116,6 +117,31 @@ func TestRehearseCoversEveryAction(t *testing.T) {
 	requireTools(t)
 	app, mail := newApps(t)
 	s := scenarioFor(t, app.URL, mail.URL)
+	if err := film.Rehearse(s, t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRehearseRefusesAPickerThatDropsItsValue(t *testing.T) {
+	requireTools(t)
+	app, mail := newApps(t)
+	s := scenarioFor(t, app.URL, mail.URL)
+	s.Steps[2].Do = append(s.Steps[2].Do, scenario.Action{Kind: scenario.Fill, Field: scenario.Field{Label: "Locked"}, Value: "2026-10-06"})
+	err := film.Rehearse(s, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), `holds "", not "2026-10-06"`) {
+		t.Fatalf("want the dropped value reported, got %v", err)
+	}
+}
+
+// The context's locale is checked through Intl; the --lang that formats
+// native date inputs renders in their shadow DOM, out of reach of see.
+func TestLocaleReachesTheBrowser(t *testing.T) {
+	requireTools(t)
+	app, mail := newApps(t)
+	s := scenarioFor(t, app.URL, mail.URL)
+	s.Locale = "fr"
+	s.Steps = s.Steps[:1]
+	s.Steps[0].See = []string{"Month: octobre"}
 	if err := film.Rehearse(s, t.TempDir()); err != nil {
 		t.Fatal(err)
 	}
