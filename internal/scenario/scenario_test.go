@@ -73,6 +73,8 @@ func TestRules(t *testing.T) {
 		{"unknown key in click", "{role: button, name: Edit}", "{role: button, label: Edit}", "field label not found"},
 		{"within outside its verbs", "      - press: Enter", "      - press: Enter\n        within: dialog", "within is allowed on"},
 		{"within other than dialog", "within: dialog", "within: drawer", "only dialog"},
+		{"terminal and base_url", "title: Tour", "title: Tour\nterminal: {shell: sh}", "exclude each other"},
+		{"empty type", "      - press: Enter", "      - type: ''", "the value is empty"},
 		{"cut outside wait", "      - press: Enter", "      - press: Enter\n        cut: true", "allowed on wait only"},
 		{"timeout outside wait", "      - press: Enter", "      - press: Enter\n        timeout: 60", "allowed on wait only"},
 		{"negative wait timeout", "      - wait: Home", "      - wait: Home\n        timeout: -1", "timeout must be positive"},

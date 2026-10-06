@@ -25,6 +25,11 @@ func Film(s *scenario.Scenario, outDir string) error {
 	}
 	defer os.RemoveAll(tmp) // raw webm and caption PNGs
 
+	s, stop, err := withTerminal(s)
+	if err != nil {
+		return err
+	}
+	defer stop()
 	ses, err := launch(s, tmp)
 	if err != nil {
 		return err

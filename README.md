@@ -17,6 +17,8 @@ asserted on screen, then the band adds "You should see: ..." and holds.
   images by the browser and overlaid by ffmpeg, so it needs neither libass
   nor drawtext.
 - The Playwright driver and Chromium, installed by `demo-film install`.
+- [`ttyd`](https://github.com/tsl0922/ttyd), only to film a terminal
+  (`brew install ttyd`, `apt install ttyd`).
 
 `rehearse` and `film` check these first and print the exact command to run
 when one is missing.
@@ -49,6 +51,7 @@ Rehearse first, film when it is green. Pass the full scenario through
 ```yaml
 title: string
 base_url: http://host:port            # relative `open` paths resolve against it
+terminal: {shell: zsh, cwd: ~/code}   # instead of base_url, see "Terminal" below
 viewport: {width: 1440, height: 900}  # optional, this is the default; both even
 locale: fr                            # optional, see below
 hide: ["css selector", ...]           # optional, see below
@@ -68,6 +71,33 @@ steps:
 ```
 
 Unknown keys are errors. `examples/shop.yaml` is a complete scenario.
+
+### Terminal
+
+`terminal` films a shell instead of a web app. demo-film serves it in the
+browser with ttyd, on the loopback only, and opens it off camera before step
+1, once the shell has printed its prompt. `shell` is the command line
+(default: `$SHELL`), `cwd` its directory (default: the current one). The
+text is rendered in the page, so `wait` and `see` read the terminal like any
+screen. Type commands with `type`, run them with `press: Enter`, and cut
+the long ones with a `wait` marked `cut` (see below). The typed command
+stays on screen: `wait` and `see` for a text it contains match at once, so
+aim at a text only the output prints.
+
+```yaml
+title: A worktree in one command
+terminal: {cwd: ~/code/shop}
+steps:
+  - caption: I create a worktree with its own stack
+    do:
+      - type: wtm create feat/login
+      - press: Enter
+      - wait: stack ready
+        cut: true
+        timeout: 900
+    see: [stack ready]
+    expect: the worktree is ready on its own ports
+```
 
 - `locale` sets `localStorage.i18nextLng` before any page script runs, and
   the browser's own language: `Intl`, `Accept-Language` and the native date
@@ -94,6 +124,7 @@ is visible, character by character.
 | `fill: {field: "Email", value: "..."}` | type in the field found by label or placeholder; `field: password` is the password input; `field: 2` is the 2nd visible text control (1-based) |
 | `select: {field: "Category", option: "Lighting"}` | native `<select>`, by label or by rank (among the page's selects); option by visible label |
 | `press: Enter` | press a key |
+| `type: "ls -l"` | type the text, visibly, into whatever has the focus (a terminal) |
 | `hover: "Visible text"` | move the cursor onto the element |
 | `wait: "text"` | wait until the text is visible |
 | `popup: {click: "Docs", url_contains: "/docs"}` | click a link that opens a new tab, assert the tab's URL contains the string, close the tab |
@@ -152,7 +183,8 @@ They are validation only, no browser needed, and they exist so a film cannot
 quietly lie.
 
 - **Schema.** Unknown keys, unknown verbs, malformed actions are errors; a
-  scenario needs a title, a `base_url` and steps; each step needs a caption,
+  scenario needs a title, a `base_url` or a `terminal` (not both) and steps;
+  each step needs a caption,
   at least one action and an `expect`. Viewport dimensions must be even
   (H.264 requires it).
 - **A step with `check` needs a non-empty `see`.** An acceptance point that

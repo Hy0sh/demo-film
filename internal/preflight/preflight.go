@@ -26,6 +26,18 @@ func ffmpegHint() string {
 	return "sudo apt install ffmpeg (or your distribution's package)"
 }
 
+// TTYD checks that ttyd, which serves a terminal demo's shell, is on PATH.
+func TTYD() error {
+	if _, err := exec.LookPath("ttyd"); err != nil {
+		hint := "sudo apt install ttyd (or your distribution's package)"
+		if runtime.GOOS == "darwin" {
+			hint = "brew install ttyd"
+		}
+		return fmt.Errorf("ttyd not found on PATH (needed to film a terminal): %s", hint)
+	}
+	return nil
+}
+
 // Browser wraps a Playwright driver/browser failure with the install command.
 func Browser(err error) error {
 	return fmt.Errorf("playwright is not ready: %w\nrun: %s", err, BrowserHint)

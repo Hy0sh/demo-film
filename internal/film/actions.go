@@ -256,7 +256,11 @@ func (r *runner) do(a scenario.Action) error {
 		if err != nil {
 			return err
 		}
-		_, err = r.page.Goto(url)
+		if _, err = r.page.Goto(url); err != nil || r.s.Terminal == nil {
+			return err
+		}
+		_, err = r.page.WaitForFunction(promptJS, nil,
+			playwright.PageWaitForFunctionOptions{Timeout: playwright.Float(float64(to.Milliseconds()))})
 		return err
 
 	case scenario.Menu:
@@ -304,6 +308,12 @@ func (r *runner) do(a scenario.Action) error {
 
 	case scenario.Press:
 		return r.page.Keyboard().Press(a.Text)
+
+	case scenario.Type:
+		if !r.filming {
+			return r.page.Keyboard().Type(a.Text)
+		}
+		return r.page.Keyboard().Type(a.Text, playwright.KeyboardTypeOptions{Delay: playwright.Float(typingDelay / r.s.Speed)})
 
 	case scenario.Hover:
 		loc, err := r.find(to, fmt.Sprintf("%q", a.Text), r.byText(root, a.Text)...)

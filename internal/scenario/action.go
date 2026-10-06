@@ -17,6 +17,7 @@ const (
 	Fill    = "fill"
 	Select  = "select"
 	Press   = "press"
+	Type    = "type" // keystrokes to the focused element, a terminal above all
 	Hover   = "hover"
 	Wait    = "wait"
 	Popup   = "popup"
@@ -121,7 +122,7 @@ func (a *Action) UnmarshalYAML(n *yaml.Node) error {
 	}
 	a.Kind = key.Value
 	switch a.Kind {
-	case Open, Hover, Wait, Press, Confirm:
+	case Open, Hover, Wait, Press, Type, Confirm:
 		return val.Decode(&a.Text)
 	case Menu:
 		if err := val.Decode(&a.Menu); err != nil {
@@ -157,7 +158,7 @@ func (a *Action) UnmarshalYAML(n *yaml.Node) error {
 		}
 		a.Link, a.URLContains = f.Click, f.URLContains
 	default:
-		return fmt.Errorf("line %d: unknown action %q (open, menu, click, fill, select, press, hover, wait, popup, confirm)", key.Line, a.Kind)
+		return fmt.Errorf("line %d: unknown action %q (open, menu, click, fill, select, press, type, hover, wait, popup, confirm)", key.Line, a.Kind)
 	}
 	return nil
 }
