@@ -13,7 +13,11 @@ import (
 // Rehearse plays every step with no pause and no video, asserting each
 // step's see texts. On failure it writes rehearse-fail-step<N>.png (full
 // page) in outDir and returns the *StepError.
-func Rehearse(s *scenario.Scenario, outDir string) error {
+//
+// paced plays it at the take's pace, captions read and held, cursor
+// travelling, keys typed one by one, with no video: slower, but what
+// depends on time (a toast leaving, data arriving) happens as in the take.
+func Rehearse(s *scenario.Scenario, outDir string, paced bool) error {
 	s, creds, stop, err := withTerminal(s)
 	if err != nil {
 		return err
@@ -24,10 +28,12 @@ func Rehearse(s *scenario.Scenario, outDir string) error {
 		return err
 	}
 	defer ses.close()
-	r := &runner{s: s, page: ses.page}
+	r := &runner{s: s, page: ses.page, paced: paced}
 	for i, st := range s.Steps {
+		r.pause(ReadTime(st.Caption, s.Speed))
 		err := r.runStep(i+1, st)
 		if err == nil {
+			r.pause(HoldTime(st.Expect, s.Speed))
 			continue
 		}
 		shot := filepath.Join(outDir, fmt.Sprintf("rehearse-fail-step%d.png", i+1))

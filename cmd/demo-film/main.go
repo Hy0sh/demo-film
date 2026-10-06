@@ -78,9 +78,10 @@ func installCmd() *cobra.Command {
 
 func rehearseCmd() *cobra.Command {
 	var outDir string
+	var paced bool
 	cmd := &cobra.Command{
 		Use:   "rehearse <scenario.yaml>",
-		Short: "Run every step with no pause and no video, asserting each see",
+		Short: "Run every step with no pause (or at the take's pace) and no video, asserting each see",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := scenario.Load(args[0])
@@ -90,7 +91,7 @@ func rehearseCmd() *cobra.Command {
 			if err := os.MkdirAll(outDir, 0o755); err != nil {
 				return fail(err)
 			}
-			if err := film.Rehearse(s, outDir); err != nil {
+			if err := film.Rehearse(s, outDir, paced); err != nil {
 				return fail(err)
 			}
 			fmt.Printf("rehearsal ok: %d steps\n", len(s.Steps))
@@ -98,6 +99,7 @@ func rehearseCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVarP(&outDir, "out", "o", ".", "directory for the failure screenshot")
+	cmd.Flags().BoolVar(&paced, "paced", false, "play at the take's pace (captions, cursor, typing), without video: slower, faithful to timing")
 	return cmd
 }
 
