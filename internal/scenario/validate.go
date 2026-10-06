@@ -42,7 +42,11 @@ func Validate(s *Scenario) []string {
 		add("title is empty")
 	}
 	baseOrigin := ""
-	if strings.TrimSpace(s.BaseURL) == "" {
+	if s.Terminal != nil {
+		if s.BaseURL != "" {
+			add("terminal and base_url exclude each other: a demo films a shell or a web app")
+		}
+	} else if strings.TrimSpace(s.BaseURL) == "" {
 		add("base_url is empty")
 	} else if o, err := Origin(s.BaseURL); err != nil {
 		add("base_url: %v", err)
@@ -145,8 +149,14 @@ func validateAction(a Action) []string {
 			e = append(e, "within is allowed on click, fill, select, hover and wait only")
 		}
 	}
+	if (a.Cut || a.Timeout != 0) && a.Kind != Wait {
+		e = append(e, "cut and timeout are allowed on wait only")
+	}
+	if a.Timeout < 0 {
+		e = append(e, "timeout must be positive")
+	}
 	switch a.Kind {
-	case Open, Hover, Wait, Press, Confirm:
+	case Open, Hover, Wait, Press, Type, Confirm:
 		need(strings.TrimSpace(a.Text) != "", "the value is empty")
 	case Menu:
 		need(len(a.Menu) == 2 && a.Menu[0] != "" && a.Menu[1] != "", "menu needs exactly [Parent label, Child label]")

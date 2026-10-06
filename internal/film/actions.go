@@ -28,7 +28,48 @@ type runner struct {
 	page    playwright.Page
 	filming bool
 	x, y    float64 // last cursor position, where the next travel starts
+	cuts    []span  // the waits marked cut, removed from the video
 }
+
+// span is a stretch of wall-clock time.
+type span struct{ from, to time.Time }
+
+// cutTotal is the time the cuts so far remove from the video.
+func (r *runner) cutTotal() time.Duration {
+	var d time.Duration
+	for _, c := range r.cuts {
+		d += c.to.Sub(c.from)
+	}
+	return d
+}
+
+// cardTime is how long the transition card shows on each side of a cut.
+const cardTime = 1200 * time.Millisecond
+
+// cutWait plays a wait marked cut: a transition card covers the page with a
+// spinner, the wait happens under it and is cut out, then the card names the
+// time skipped ("⏩ 2:14 later") and fades onto the result. The viewer sees
+// that the film jumped: a cut never passes for an instant task.
+func (r *runner) cutWait(find func() error) error {
+	if _, err := r.page.Evaluate(cardJS, ""); err != nil {
+		return err
+	}
+	r.pause(r.gesture(cardTime))
+	from := time.Now()
+	if err := find(); err != nil {
+		return err
+	}
+	r.cuts = append(r.cuts, span{from, time.Now()})
+	if _, err := r.page.Evaluate(cardJS, "⏩ "+Clock(time.Since(from))+" "+r.s.Labels.Later); err != nil {
+		return err
+	}
+	r.pause(max(r.gesture(cardTime), minShown))
+	_, err := r.page.Evaluate(cardJS, nil)
+	return err
+}
+
+//go:embed card.js
+var cardJS string
 
 func (r *runner) timeout() time.Duration { return time.Duration(r.s.Timeout) * time.Second }
 
@@ -206,13 +247,20 @@ func (r *runner) field(root playwright.Locator, f scenario.Field, selects bool) 
 func (r *runner) do(a scenario.Action) error {
 	root := r.root(a)
 	to := r.timeout()
+	if a.Timeout > 0 {
+		to = time.Duration(a.Timeout) * time.Second
+	}
 	switch a.Kind {
 	case scenario.Open:
 		url, err := scenario.ResolveURL(r.s.BaseURL, a.Text)
 		if err != nil {
 			return err
 		}
-		_, err = r.page.Goto(url)
+		if _, err = r.page.Goto(url); err != nil || r.s.Terminal == nil {
+			return err
+		}
+		_, err = r.page.WaitForFunction(promptJS, nil,
+			playwright.PageWaitForFunctionOptions{Timeout: playwright.Float(float64(to.Milliseconds()))})
 		return err
 
 	case scenario.Menu:
@@ -261,6 +309,12 @@ func (r *runner) do(a scenario.Action) error {
 	case scenario.Press:
 		return r.page.Keyboard().Press(a.Text)
 
+	case scenario.Type:
+		if !r.filming {
+			return r.page.Keyboard().Type(a.Text)
+		}
+		return r.page.Keyboard().Type(a.Text, playwright.KeyboardTypeOptions{Delay: playwright.Float(typingDelay / r.s.Speed)})
+
 	case scenario.Hover:
 		loc, err := r.find(to, fmt.Sprintf("%q", a.Text), r.byText(root, a.Text)...)
 		if err != nil {
@@ -269,8 +323,14 @@ func (r *runner) do(a scenario.Action) error {
 		return r.travel(loc)
 
 	case scenario.Wait:
-		_, err := r.find(to, fmt.Sprintf("%q", a.Text), r.byText(root, a.Text)...)
-		return err
+		find := func() error {
+			_, err := r.find(to, fmt.Sprintf("%q", a.Text), r.byText(root, a.Text)...)
+			return err
+		}
+		if !a.Cut || !r.filming {
+			return find()
+		}
+		return r.cutWait(find)
 
 	case scenario.Popup:
 		return r.popup(root, a)

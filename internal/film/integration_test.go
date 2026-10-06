@@ -147,6 +147,45 @@ func TestLocaleReachesTheBrowser(t *testing.T) {
 	}
 }
 
+func TestFilmATerminal(t *testing.T) {
+	requireTools(t)
+	if _, err := exec.LookPath("ttyd"); err != nil {
+		t.Skip("ttyd not installed")
+	}
+	cwd := t.TempDir()
+	if err := os.WriteFile(filepath.Join(cwd, "marker.txt"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	s, err := scenario.Parse([]byte(fmt.Sprintf(`
+title: Shell
+terminal: {shell: sh, cwd: %s}
+timeout: 5
+steps:
+  - caption: Compute in the shell
+    do:
+      - type: echo $((6*7)); ls
+      - press: Enter
+    see: ["42", marker.txt]
+    expect: the answer and the files of cwd
+`, cwd)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if errs := scenario.Validate(s); len(errs) > 0 {
+		t.Fatal(errs)
+	}
+	if err := film.Rehearse(s, t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	if err := film.Film(s, dir); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "demo.mp4")); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestRehearseFailsAtTheRightStep(t *testing.T) {
 	requireTools(t)
 	app, mail := newApps(t)

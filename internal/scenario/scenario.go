@@ -18,11 +18,13 @@ const (
 
 // Scenario is one demo, from the first page to the last "you should see".
 type Scenario struct {
-	Title    string   `yaml:"title"`
-	BaseURL  string   `yaml:"base_url"`
-	Viewport Viewport `yaml:"viewport"`
-	Locale   string   `yaml:"locale"`
-	Hide     []string `yaml:"hide"`
+	Title   string `yaml:"title"`
+	BaseURL string `yaml:"base_url"`
+	// Terminal films a shell instead of a web app: it replaces base_url.
+	Terminal *Terminal `yaml:"terminal"`
+	Viewport Viewport  `yaml:"viewport"`
+	Locale   string    `yaml:"locale"`
+	Hide     []string  `yaml:"hide"`
 	// Timeout is the budget of one action, in seconds.
 	Timeout int `yaml:"timeout"`
 	// Speed scales the whole video, gestures (cursor travel, pauses around
@@ -31,6 +33,12 @@ type Scenario struct {
 	Speed  float64 `yaml:"speed"`
 	Labels Labels  `yaml:"labels"`
 	Steps  []Step  `yaml:"steps"`
+}
+
+// Terminal is the shell a terminal demo films, served in the browser by ttyd.
+type Terminal struct {
+	Shell string `yaml:"shell"` // command line; default: $SHELL
+	Cwd   string `yaml:"cwd"`   // default: the current directory; ~ is expanded
 }
 
 type Viewport struct {
@@ -43,6 +51,7 @@ type Labels struct {
 	Step  string `yaml:"step"`
 	See   string `yaml:"see"`
 	Check string `yaml:"check"`
+	Later string `yaml:"later"` // the card after a cut: "⏩ 2:14 later"
 }
 
 // Step is one caption, the actions it films, and what must be on screen after.
@@ -80,6 +89,9 @@ func Parse(data []byte) (*Scenario, error) {
 	}
 	if s.Labels.Check == "" {
 		s.Labels.Check = "check"
+	}
+	if s.Labels.Later == "" {
+		s.Labels.Later = "later"
 	}
 	return &s, nil
 }

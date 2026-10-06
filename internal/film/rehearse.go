@@ -14,6 +14,11 @@ import (
 // step's see texts. On failure it writes rehearse-fail-step<N>.png (full
 // page) in outDir and returns the *StepError.
 func Rehearse(s *scenario.Scenario, outDir string) error {
+	s, stop, err := withTerminal(s)
+	if err != nil {
+		return err
+	}
+	defer stop()
 	ses, err := launch(s, "")
 	if err != nil {
 		return err

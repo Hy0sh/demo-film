@@ -17,6 +17,7 @@ const (
 	Fill    = "fill"
 	Select  = "select"
 	Press   = "press"
+	Type    = "type" // keystrokes to the focused element, a terminal above all
 	Hover   = "hover"
 	Wait    = "wait"
 	Popup   = "popup"
@@ -24,10 +25,12 @@ const (
 )
 
 // Action is one item of a step's `do`: a single-key map, plus the optional
-// `within` modifier. Only the fields of its Kind are set.
+// `within`, `cut` and `timeout` modifiers. Only the fields of its Kind are set.
 type Action struct {
-	Kind   string
-	Within string // "" or "dialog"
+	Kind    string
+	Within  string // "" or "dialog"
+	Cut     bool   // wait: the video skips from the start of the wait to the text
+	Timeout int    // wait: seconds, overrides the scenario's timeout
 
 	Text string   // open (url or path), click/hover/wait text, press key, confirm button
 	Menu []string // menu: parent, child
@@ -95,8 +98,17 @@ func (a *Action) UnmarshalYAML(n *yaml.Node) error {
 	var key, val *yaml.Node
 	for i := 0; i < len(n.Content); i += 2 {
 		k := n.Content[i].Value
-		if k == "within" {
-			if err := n.Content[i+1].Decode(&a.Within); err != nil {
+		var modifier any
+		switch k {
+		case "within":
+			modifier = &a.Within
+		case "cut":
+			modifier = &a.Cut
+		case "timeout":
+			modifier = &a.Timeout
+		}
+		if modifier != nil {
+			if err := n.Content[i+1].Decode(modifier); err != nil {
 				return err
 			}
 			continue
@@ -110,7 +122,7 @@ func (a *Action) UnmarshalYAML(n *yaml.Node) error {
 	}
 	a.Kind = key.Value
 	switch a.Kind {
-	case Open, Hover, Wait, Press, Confirm:
+	case Open, Hover, Wait, Press, Type, Confirm:
 		return val.Decode(&a.Text)
 	case Menu:
 		if err := val.Decode(&a.Menu); err != nil {
@@ -146,7 +158,7 @@ func (a *Action) UnmarshalYAML(n *yaml.Node) error {
 		}
 		a.Link, a.URLContains = f.Click, f.URLContains
 	default:
-		return fmt.Errorf("line %d: unknown action %q (open, menu, click, fill, select, press, hover, wait, popup, confirm)", key.Line, a.Kind)
+		return fmt.Errorf("line %d: unknown action %q (open, menu, click, fill, select, press, type, hover, wait, popup, confirm)", key.Line, a.Kind)
 	}
 	return nil
 }
@@ -216,6 +228,9 @@ func (a Action) String() string {
 	}
 	if a.Within != "" {
 		s += " within " + a.Within
+	}
+	if a.Cut {
+		s += " (cut)"
 	}
 	return s
 }

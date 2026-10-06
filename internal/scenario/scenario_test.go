@@ -73,6 +73,11 @@ func TestRules(t *testing.T) {
 		{"unknown key in click", "{role: button, name: Edit}", "{role: button, label: Edit}", "field label not found"},
 		{"within outside its verbs", "      - press: Enter", "      - press: Enter\n        within: dialog", "within is allowed on"},
 		{"within other than dialog", "within: dialog", "within: drawer", "only dialog"},
+		{"terminal and base_url", "title: Tour", "title: Tour\nterminal: {shell: sh}", "exclude each other"},
+		{"empty type", "      - press: Enter", "      - type: ''", "the value is empty"},
+		{"cut outside wait", "      - press: Enter", "      - press: Enter\n        cut: true", "allowed on wait only"},
+		{"timeout outside wait", "      - press: Enter", "      - press: Enter\n        timeout: 60", "allowed on wait only"},
+		{"negative wait timeout", "      - wait: Home", "      - wait: Home\n        timeout: -1", "timeout must be positive"},
 		{"popup without url", "{click: Docs, url_contains: /docs}", "{click: Docs}", "popup needs"},
 		{"menu with one label", "[Settings, Profile]", "[Settings]", "menu needs exactly"},
 		{"last click is a forward button", "      - confirm: Discard", "      - click: Suivant", "forward button"},
@@ -88,6 +93,19 @@ func TestRules(t *testing.T) {
 				t.Errorf("want a problem containing %q, got %q", c.want, got)
 			}
 		})
+	}
+}
+
+func TestCutWait(t *testing.T) {
+	s, err := Parse([]byte(strings.Replace(valid, "      - wait: Home", "      - wait: Home\n        cut: true\n        timeout: 600", 1)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if errs := Validate(s); len(errs) > 0 {
+		t.Fatalf("a cut wait must pass: %v", errs)
+	}
+	if w := s.Steps[0].Do[1]; !w.Cut || w.Timeout != 600 || w.Text != "Home" {
+		t.Errorf("cut wait decoded as %+v", w)
 	}
 }
 

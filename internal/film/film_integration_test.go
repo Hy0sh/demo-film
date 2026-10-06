@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/Hy0sh/demo-film/internal/film"
+	"github.com/Hy0sh/demo-film/internal/scenario"
 )
 
 func ffprobe(t *testing.T, file, entries string) string {
@@ -105,6 +106,50 @@ func TestFilmWritesVideoAndChapters(t *testing.T) {
 		if e.Name() != "demo.mp4" && e.Name() != "chapters.md" {
 			t.Errorf("leftover in the output dir: %s", e.Name())
 		}
+	}
+}
+
+func TestFilmCutsALongWait(t *testing.T) {
+	requireTools(t)
+	app, _ := newApps(t)
+	s, err := scenario.Parse([]byte(fmt.Sprintf(`
+title: Export
+base_url: %s
+steps:
+  - caption: Open the shop
+    do:
+      - open: /
+    see: [Home]
+    expect: the home page
+  - caption: Export the catalogue
+    do:
+      - click: Start export
+      - wait: Export done
+        cut: true
+        timeout: 30
+    see: [Export done]
+    expect: the export is done
+`, app.URL)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	if err := film.Film(s, dir); err != nil {
+		t.Fatal(err)
+	}
+	var floor float64
+	for _, st := range s.Steps {
+		floor += (film.ReadTime(st.Caption, s.Speed) + film.HoldTime(st.Expect, s.Speed)).Seconds()
+	}
+	floor += 2 * film.ActionPace(s.Speed).Seconds()
+	out, err := exec.Command("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", filepath.Join(dir, "demo.mp4")).Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The 12 s export is gone; the badge and gestures stay well under it.
+	dur, _ := strconv.ParseFloat(strings.TrimSpace(string(out)), 64)
+	if dur < floor || dur > floor+6 {
+		t.Errorf("duration %.1fs, want between %.1fs and %.1fs: the wait was not cut", dur, floor, floor+6)
 	}
 }
 

@@ -6,6 +6,17 @@ bump carries new commands or new behaviour, a patch bump carries fixes.
 
 ## [Unreleased]
 
+### Added
+
+- `cut: true` on `wait` removes a long task from the video: it jumps to the
+  moment the awaited text shows, under a transition card that reads
+  "⏩ 2:14 later" before fading onto the result. `timeout: N` on `wait`
+  gives that task more than the scenario's timeout. The card's word comes
+  from the new `labels.later`.
+- `terminal` films a shell instead of a web app, served in the browser by
+  ttyd (a new requirement, for terminal demos only), and the new `type`
+  action types into it.
+
 ### Fixed
 
 - `fill` on a native date, month, week, time, datetime-local, colour or

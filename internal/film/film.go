@@ -25,6 +25,11 @@ func Film(s *scenario.Scenario, outDir string) error {
 	}
 	defer os.RemoveAll(tmp) // raw webm and caption PNGs
 
+	s, stop, err := withTerminal(s)
+	if err != nil {
+		return err
+	}
+	defer stop()
 	ses, err := launch(s, tmp)
 	if err != nil {
 		return err
@@ -47,7 +52,7 @@ func Film(s *scenario.Scenario, outDir string) error {
 		first.Do = first.Do[1:]
 		steps = append([]scenario.Step{first}, steps[1:]...)
 	}
-	since := func() time.Duration { return time.Since(ses.t0) - offset }
+	since := func() time.Duration { return time.Since(ses.t0) - offset - r.cutTotal() }
 
 	// starts[2k] is when step k's caption appears, starts[2k+1] when its
 	// "you should see" does.
@@ -100,7 +105,18 @@ func Film(s *scenario.Scenario, outDir string) error {
 		windows = append(windows, Window{from.Seconds(), to.Seconds()})
 	}
 
-	filter := Filter(s.Viewport.Width, s.Viewport.Height, windows)
+	// The kept stretches of the raw video, in its time after the pre-roll:
+	// each cut ends one and starts the next.
+	var keep []Window
+	if len(r.cuts) > 0 {
+		from := 0.0
+		for _, c := range r.cuts {
+			keep = append(keep, Window{from, (c.from.Sub(ses.t0) - offset).Seconds()})
+			from = (c.to.Sub(ses.t0) - offset).Seconds()
+		}
+		keep = append(keep, Window{from, (end + r.cutTotal() + 2*time.Second).Seconds()})
+	}
+	filter := Filter(s.Viewport.Width, s.Viewport.Height, keep, windows)
 	if err := assemble(raw, offset, pngs, filter, filepath.Join(outDir, "demo.mp4"), len(windows)); err != nil {
 		return err
 	}

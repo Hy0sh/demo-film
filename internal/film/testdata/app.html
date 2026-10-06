@@ -22,11 +22,13 @@
 </table>
 <span id="help" onmouseenter="show('Help tooltip')">Help</span>
 <button onclick="openWizard()">Open wizard</button>
+<button onclick="setTimeout(() => show('Export done'), slowJob)">Start export</button>
 <a href="/docs" target="_blank">Docs</a>
 <div id="slot"></div>
 <script>
 const show = t => { document.getElementById('state').textContent = t; };
 document.getElementById('month').textContent = new Date(2026, 9, 6).toLocaleDateString(undefined, { month: 'long' });
+const slowJob = 12000; // ms, a task long enough for a cut to matter
 function openWizard() {
   const d = document.createElement('div'); d.setAttribute('role', 'dialog');
   d.innerHTML = '<h2>Wizard</h2><label>Colour <select><option>Red</option><option>Blue</option></select></label>' +
