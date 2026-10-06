@@ -48,7 +48,7 @@ type piece struct {
 	dir           string
 	video         string // absolute: a dir named "-x" is no ffmpeg option
 	title         string
-	rows          []string // chapters.md table rows
+	rows          []Chapter // read back from chapters.md, to the second
 	width, height int
 	codec, pixFmt string
 	speed         float64
@@ -116,7 +116,11 @@ func Join(dirs []string, outDir string, cards bool) error {
 	if err := ffmpeg(append(args, encodeArgs(pieces[0].speed, filepath.Join(tmp, "demo.mp4"))...)...); err != nil {
 		return err
 	}
-	return publish(tmp, outDir, joinChapters(pieces, card))
+	md, err := joinChapters(pieces, card)
+	if err != nil {
+		return err
+	}
+	return publish(tmp, outDir, md)
 }
 
 func abs(p string) string {
@@ -139,8 +143,10 @@ func readPiece(dir string) (piece, error) {
 		switch {
 		case strings.HasPrefix(l, "# ") && p.title == "":
 			p.title = strings.TrimPrefix(l, "# ")
-		case chapterRow.MatchString(l):
-			p.rows = append(p.rows, l)
+		default:
+			if c, ok := readChapter(l); ok {
+				p.rows = append(p.rows, c)
+			}
 		}
 	}
 	out, err := exec.Command("ffprobe", "-v", "error", "-select_streams", "v:0",
@@ -217,31 +223,46 @@ func renderCards(pieces []piece, dir string) ([]string, error) {
 	return pngs, nil
 }
 
-// chapterRow is a step row of chapters.md, its time captured in m:ss. The
-// check cell may hold an escaped pipe.
-var chapterRow = regexp.MustCompile(`^(\| \d+ \| (?:[^|\\]|\\.)* \| )(\d+):(\d\d)( \|.*)$`)
+// chapterRow is a step row of chapters.md: step, check, m:ss, caption and
+// expectation, a cell holding escaped pipes.
+var chapterRow = regexp.MustCompile(`^\| (\d+) \| ((?:[^|\\]|\\.)*) \| (\d+):(\d\d) \| ((?:[^|\\]|\\.)*) \| ((?:[^|\\]|\\.)*) \|$`)
+
+var unescapeCell = strings.NewReplacer(`\|`, "|")
+
+// readChapter reads a step row of chapters.md back, its time to the second.
+func readChapter(line string) (Chapter, bool) {
+	m := chapterRow.FindStringSubmatch(line)
+	if m == nil {
+		return Chapter{}, false
+	}
+	n, _ := strconv.Atoi(m[1])
+	min, _ := strconv.Atoi(m[3])
+	sec, _ := strconv.Atoi(m[4])
+	return Chapter{
+		N:       n,
+		Check:   unescapeCell.Replace(m[2]),
+		At:      time.Duration(min)*time.Minute + time.Duration(sec)*time.Second,
+		Caption: unescapeCell.Replace(m[5]),
+		Expect:  unescapeCell.Replace(m[6]),
+	}, true
+}
 
 // joinChapters renders the joined chapters.md: one section per film, each
 // row's time shifted by the cards and films before it. A row's own time is
 // read back to the second from its chapters.md, so a joined time may be up
 // to a second early; the shift itself is exact, the error never adds up.
-func joinChapters(pieces []piece, card time.Duration) string {
-	var b strings.Builder
+func joinChapters(pieces []piece, card time.Duration) (string, error) {
+	var sections []section
 	var at time.Duration
-	for i, p := range pieces {
+	for _, p := range pieces {
 		at += card
-		if i > 0 {
-			b.WriteString("\n")
+		rows := make([]Chapter, len(p.rows))
+		for i, c := range p.rows {
+			c.At += at
+			rows[i] = c
 		}
-		fmt.Fprintf(&b, "## %s\n\n| Step | Check | Time | Caption | Expect |\n|---|---|---|---|---|\n", p.title)
-		for _, r := range p.rows {
-			m := chapterRow.FindStringSubmatch(r)
-			min, _ := strconv.Atoi(m[2])
-			sec, _ := strconv.Atoi(m[3])
-			t := at + time.Duration(min)*time.Minute + time.Duration(sec)*time.Second
-			b.WriteString(m[1] + Clock(t) + m[4] + "\n")
-		}
+		sections = append(sections, section{Heading: "##", Title: p.title, Rows: rows})
 		at += p.duration
 	}
-	return b.String()
+	return renderChapters(sections)
 }

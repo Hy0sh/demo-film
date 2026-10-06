@@ -1,0 +1,74 @@
+# Every action of the vocabulary on the test app. {{.App}} and {{.Mail}} are
+# the test servers' URLs.
+title: Shop tour
+base_url: {{.App}}
+timeout: 5
+hide: ["#nothing"]
+locale: en
+labels: {step: "Étape", see: "Tu dois voir :", check: "vérifie"}
+steps:
+  - caption: Open the shop
+    check: E1
+    do:
+      - open: /
+      - wait: Home
+    see: [Home]
+    expect: the home page
+  - caption: Open the profile through the menu
+    do:
+      - menu: [Settings, Profile]
+    see: [Profile page]
+    expect: the profile page
+  - caption: Fill the form
+    do:
+      - fill: {field: Name, value: Ada}
+      - fill: {field: Search, value: lamp}
+      - press: Enter
+      - fill: {field: password, value: secret}
+      - fill: {field: 1, value: Ada Lovelace}
+      - fill: {field: Start, value: "2026-10-06"}
+      - fill: {field: Tint, value: "#AABBCC"}
+    see: ["Submitted: lamp", "Picked 2026-10-06"]
+    expect: the search was submitted
+  - caption: Use the table
+    do:
+      - click: {row: Ada, button: {nth: -1}}
+      - click: {row: Grace, button: Edit}
+      - hover: Help
+    see: [Help tooltip]
+    expect: the tooltip
+  - caption: Book the second of three identical slots
+    do:
+      - click: {text: "11h30 – 13h30", nth: 1}
+    see: [Tuesday booked]
+    expect: Tuesday is booked
+  - caption: Open the last card's actions
+    do:
+      - click: {role: button, name: Actions, nth: -1}
+    see: [Card two actions]
+    expect: the last card's menu
+  - caption: Walk through the wizard
+    do:
+      - click: {role: button, name: Open wizard}
+      - select: {field: Colour, option: Blue}
+        within: dialog
+      - click: Next
+        within: dialog
+      - wait: "Step two: Blue"
+        within: dialog
+      - click: Close
+        within: dialog
+      - confirm: Discard
+    see: [Wizard closed]
+    expect: the wizard is closed
+  - caption: Read the docs
+    do:
+      - popup: {click: Docs, url_contains: /docs}
+    see: [Home]
+    expect: still on the shop
+  - caption: Check the mail
+    do:
+      - open: {{.Mail}}
+    see: [Welcome mail, "Hello Ada, your order shipped"]
+    check: E2
+    expect: the mail

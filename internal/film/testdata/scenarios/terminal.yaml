@@ -1,0 +1,11 @@
+# A shell in {{.Cwd}}, which holds marker.txt.
+title: Shell
+terminal: {shell: sh, cwd: "{{.Cwd}}"}
+timeout: 5
+steps:
+  - caption: Compute in the shell
+    do:
+      - type: echo $((6*7)); ls
+      - press: Enter
+    see: ["42", marker.txt]
+    expect: the answer and the files of cwd

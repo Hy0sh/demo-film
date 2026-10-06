@@ -1,39 +1,14 @@
 package scenario
 
 import (
-	"os"
+	_ "embed"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
-const valid = `
-title: Tour
-base_url: http://localhost:3000
-steps:
-  - caption: Open the app
-    do:
-      - open: /
-      - wait: Home
-    see: [Home]
-    check: E1
-    expect: the home page
-  - caption: Open the form
-    do:
-      - menu: [Settings, Profile]
-      - click: {role: button, name: Edit}
-      - fill: {field: Name, value: Ada}
-      - select: {field: 2, option: Blue}
-      - click: {row: Ada, button: {nth: -2}}
-      - click: {row: Ada, button: Edit}
-      - hover: Help
-      - press: Enter
-      - popup: {click: Docs, url_contains: /docs}
-      - click: Save
-        within: dialog
-      - confirm: Discard
-    expect: the form
-`
+//go:embed testdata/valid.yaml
+var valid string
 
 func problems(t *testing.T, yaml string) string {
 	t.Helper()
@@ -198,16 +173,8 @@ func TestFieldRankAndLabel(t *testing.T) {
 }
 
 func TestPathsAreRelativeToTheScenario(t *testing.T) {
-	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "logo.png"), nil, 0o644); err != nil {
-		t.Fatal(err)
-	}
-	y := "title: T\nterminal: {cwd: work}\nwatermark: {image: logo.png}\nsteps:\n  - caption: c\n    do: [{press: Enter}]\n    expect: e\n"
-	path := filepath.Join(dir, "demo.yaml")
-	if err := os.WriteFile(path, []byte(y), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	s, err := Load(path)
+	dir := filepath.Join("testdata", "relative")
+	s, err := Load(filepath.Join(dir, "demo.yaml"))
 	if err != nil {
 		t.Fatal(err)
 	}

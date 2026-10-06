@@ -1,8 +1,6 @@
 package film
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -34,7 +32,7 @@ func TestFilterWithCuts(t *testing.T) {
 }
 
 func TestChapters(t *testing.T) {
-	got := Chapters("Tour", []Chapter{
+	got := chapters(t, "Tour", []Chapter{
 		{N: 1, At: 0, Caption: "Open", Expect: "home"},
 		{N: 2, Check: "E3", At: 75 * time.Second, Caption: "a | b\nc", Expect: "x"},
 	})
@@ -56,27 +54,36 @@ func TestWatermarkFilter(t *testing.T) {
 	}
 }
 
+// chapters renders chapters.md, failing the test on an error.
+func chapters(t *testing.T, title string, rows []Chapter) string {
+	t.Helper()
+	md, err := Chapters(title, rows)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return md
+}
+
 func TestJoinChapters(t *testing.T) {
-	a := Chapters("Agent", []Chapter{{N: 1, At: 0, Caption: "Log in", Expect: "home"}, {N: 2, At: 59 * time.Second, Caption: "a | b", Expect: "x"}})
-	b := Chapters("Citizen", []Chapter{{N: 1, Check: "E|3", At: 5 * time.Second, Caption: "Sign up", Expect: "y"}})
+	a := chapters(t, "Agent", []Chapter{{N: 1, At: 0, Caption: "Log in", Expect: "home"}, {N: 2, At: 59 * time.Second, Caption: "a | b", Expect: "x"}})
+	b := chapters(t, "Citizen", []Chapter{{N: 1, Check: "E|3", At: 5 * time.Second, Caption: "Sign up", Expect: "y"}})
 	var pieces []piece
 	for _, md := range []string{a, b} {
-		dir := t.TempDir()
-		if err := os.WriteFile(filepath.Join(dir, "chapters.md"), []byte(md), 0o644); err != nil {
-			t.Fatal(err)
-		}
-		p := piece{dir: dir}
+		var p piece
 		for _, l := range strings.Split(md, "\n") {
 			if strings.HasPrefix(l, "# ") {
 				p.title = strings.TrimPrefix(l, "# ")
-			} else if chapterRow.MatchString(l) {
-				p.rows = append(p.rows, l)
+			} else if c, ok := readChapter(l); ok {
+				p.rows = append(p.rows, c)
 			}
 		}
 		pieces = append(pieces, p)
 	}
 	pieces[0].duration = 90 * time.Second
-	got := joinChapters(pieces, 2*time.Second)
+	got, err := joinChapters(pieces, 2*time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, want := range []string{"## Agent", "| 1 |  | 0:02 | Log in |", `| 2 |  | 1:01 | a \| b |`, "## Citizen", `| 1 | E\|3 | 1:39 | Sign up |`} {
 		if !strings.Contains(got, want) {
 			t.Errorf("joined chapters lack %q:\n%s", want, got)
@@ -96,7 +103,15 @@ func TestCardTime(t *testing.T) {
 func TestBandHTML(t *testing.T) {
 	l := scenario.Labels{Step: "Étape", See: "Tu dois voir :", Check: "vérifie"}
 	st := scenario.Step{Caption: "Click <b>", Check: "E3", Expect: "a & b"}
-	a := bandHTML(l, 2, 5, st, false)
+	render := func(n int, st scenario.Step, withExpect bool) string {
+		t.Helper()
+		s, err := bandHTML(l, n, 5, st, withExpect)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return s
+	}
+	a := render(2, st, false)
 	for _, want := range []string{"Étape 2/5 · vérifie E3", "Click &lt;b&gt;"} {
 		if !strings.Contains(a, want) {
 			t.Errorf("state A lacks %q", want)
@@ -105,10 +120,10 @@ func TestBandHTML(t *testing.T) {
 	if strings.Contains(a, "Tu dois voir") {
 		t.Error("state A must not show the expectation")
 	}
-	if b := bandHTML(l, 2, 5, st, true); !strings.Contains(b, "Tu dois voir :</b> a &amp; b") {
+	if b := render(2, st, true); !strings.Contains(b, "Tu dois voir :</b> a &amp; b") {
 		t.Errorf("state B lacks the expectation: %s", b)
 	}
-	if strings.Contains(bandHTML(l, 1, 5, scenario.Step{Caption: "c"}, false), "vérifie") {
+	if strings.Contains(render(1, scenario.Step{Caption: "c"}, false), "vérifie") {
 		t.Error("no check, no check label")
 	}
 }

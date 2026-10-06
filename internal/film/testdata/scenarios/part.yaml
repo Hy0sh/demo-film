@@ -1,0 +1,12 @@
+# One part of a joined film: {{.Title}}, on the test app at {{.App}}, at a
+# viewport {{.Width}} wide.
+title: "{{.Title}}"
+base_url: {{.App}}
+speed: 4
+viewport: {width: {{.Width}}, height: 600}
+steps:
+  - caption: Open the shop
+    do:
+      - open: /
+    see: [Home]
+    expect: the home page

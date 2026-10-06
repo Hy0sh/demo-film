@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/Hy0sh/demo-film/internal/film"
-	"github.com/Hy0sh/demo-film/internal/scenario"
 )
 
 func ffprobe(t *testing.T, file, entries string) string {
@@ -122,27 +121,7 @@ func TestFilmWritesVideoAndChapters(t *testing.T) {
 func TestFilmCutsALongWait(t *testing.T) {
 	requireTools(t)
 	app, _ := newApps(t)
-	s, err := scenario.Parse([]byte(fmt.Sprintf(`
-title: Export
-base_url: %s
-steps:
-  - caption: Open the shop
-    do:
-      - open: /
-    see: [Home]
-    expect: the home page
-  - caption: Export the catalogue
-    do:
-      - click: Start export
-      - wait: Export done
-        cut: true
-        timeout: 30
-    see: [Export done]
-    expect: the export is done
-`, app.URL)))
-	if err != nil {
-		t.Fatal(err)
-	}
+	s := loadScenario(t, "cut", map[string]string{"App": app.URL})
 	dir := t.TempDir()
 	if err := film.Film(s, dir); err != nil {
 		t.Fatal(err)
@@ -162,24 +141,7 @@ steps:
 func TestFilmWithAWatermark(t *testing.T) {
 	requireTools(t)
 	app, _ := newApps(t)
-	s, err := scenario.Parse([]byte(fmt.Sprintf(`
-title: Signed
-base_url: %s
-speed: 4
-watermark: {text: "© Demo", position: top-right}
-steps:
-  - caption: Open the shop
-    do:
-      - open: /
-    see: [Home]
-    expect: the home page
-`, app.URL)))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if errs := scenario.Validate(s); len(errs) > 0 {
-		t.Fatal(errs)
-	}
+	s := loadScenario(t, "signed", map[string]string{"App": app.URL})
 	if err := film.Film(s, t.TempDir()); err != nil {
 		t.Fatal(err)
 	}
@@ -189,21 +151,7 @@ func TestJoin(t *testing.T) {
 	requireTools(t)
 	app, _ := newApps(t)
 	part := func(title string, viewport int) string {
-		s, err := scenario.Parse([]byte(fmt.Sprintf(`
-title: %s
-base_url: %s
-speed: 4
-viewport: {width: %d, height: 600}
-steps:
-  - caption: Open the shop
-    do:
-      - open: /
-    see: [Home]
-    expect: the home page
-`, title, app.URL, viewport)))
-		if err != nil {
-			t.Fatal(err)
-		}
+		s := loadScenario(t, "part", map[string]any{"Title": title, "App": app.URL, "Width": viewport})
 		dir := t.TempDir()
 		if err := film.Film(s, dir); err != nil {
 			t.Fatal(err)

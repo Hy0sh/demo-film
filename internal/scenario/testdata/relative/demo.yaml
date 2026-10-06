@@ -1,0 +1,8 @@
+# Relative paths, resolved from this file's directory, where logo.png sits.
+title: T
+terminal: {cwd: work}
+watermark: {image: logo.png}
+steps:
+  - caption: c
+    do: [{press: Enter}]
+    expect: e

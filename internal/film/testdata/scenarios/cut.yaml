@@ -1,0 +1,17 @@
+# A 12 s export on the test app at {{.App}}, cut out of the video.
+title: Export
+base_url: {{.App}}
+steps:
+  - caption: Open the shop
+    do:
+      - open: /
+    see: [Home]
+    expect: the home page
+  - caption: Export the catalogue
+    do:
+      - click: Start export
+      - wait: Export done
+        cut: true
+        timeout: 30
+    see: [Export done]
+    expect: the export is done
