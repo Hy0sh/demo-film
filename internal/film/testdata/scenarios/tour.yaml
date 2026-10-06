@@ -66,6 +66,12 @@ steps:
       - popup: {click: Docs, url_contains: /docs}
     see: [Home]
     expect: still on the shop
+  - caption: Fill a French field and save, typed with plain spaces
+    do:
+      - fill: {field: "ex : Natation", value: Natation}
+      - click: Enregistrer le groupe
+    see: [Group saved]
+    expect: the group is saved
   - caption: Check the mail
     do:
       - open: {{.Mail}}

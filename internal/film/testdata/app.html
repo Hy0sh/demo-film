@@ -14,6 +14,9 @@
 <label>Secret <input type="password"></label>
 <label>Start <input type="date" onchange="document.getElementById('picked').textContent='Picked '+this.value"></label>
 <label>Tint <input type="color"></label>
+<!-- French typography: a narrow no-break space before the colon. -->
+<input placeholder="ex&#8239;: Natation" oninput="show('Sport: ' + this.value)">
+<button onclick="show('Group saved')">Enregistrer&nbsp;le&nbsp;groupe</button>
 <p id="picked"></p>
 <label>Locked <input type="date" oninput="this.value = ''"></label>
 <p>Month: <span id="month"></span></p>

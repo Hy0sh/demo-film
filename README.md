@@ -188,7 +188,9 @@ cut video.
 ```
 
 **Text matching**: exact visible text first, then case-insensitive
-substring. Only visible elements match. A failure names the step, the
+substring. A space in the scenario matches any run of white space on the
+page, no-break spaces included (French labels put U+202F before a colon).
+Only visible elements match. A failure names the step, the
 action and what was looked for, and lists the names visible on that screen
 (links, buttons, tabs, fields, labels), so a wrong label is fixed from the
 error alone. Each action gets `timeout` seconds (default 15).

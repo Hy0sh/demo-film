@@ -158,15 +158,15 @@ func (r *runner) suggest() string {
 
 func (r *runner) byText(root playwright.Locator, text string) []playwright.Locator {
 	return []playwright.Locator{
-		root.GetByText(text, playwright.LocatorGetByTextOptions{Exact: playwright.Bool(true)}),
-		root.GetByText(text, playwright.LocatorGetByTextOptions{Exact: playwright.Bool(false)}),
+		root.GetByText(match(text, true), playwright.LocatorGetByTextOptions{Exact: playwright.Bool(true)}),
+		root.GetByText(match(text, false), playwright.LocatorGetByTextOptions{Exact: playwright.Bool(false)}),
 	}
 }
 
 func (r *runner) byName(root playwright.Locator, role, name string) []playwright.Locator {
 	var out []playwright.Locator
 	for _, exact := range []bool{true, false} {
-		out = append(out, root.GetByRole(playwright.AriaRole(role), playwright.LocatorGetByRoleOptions{Name: name, Exact: playwright.Bool(exact)}))
+		out = append(out, root.GetByRole(playwright.AriaRole(role), playwright.LocatorGetByRoleOptions{Name: match(name, exact), Exact: playwright.Bool(exact)}))
 	}
 	return out
 }
@@ -236,12 +236,12 @@ func (r *runner) field(root playwright.Locator, f scenario.Field, selects bool) 
 	}
 	var out []playwright.Locator
 	for _, exact := range []bool{true, false} {
-		byLabel := root.GetByLabel(f.Label, playwright.LocatorGetByLabelOptions{Exact: playwright.Bool(exact)})
+		byLabel := root.GetByLabel(match(f.Label, exact), playwright.LocatorGetByLabelOptions{Exact: playwright.Bool(exact)})
 		if selects {
 			out = append(out, byLabel)
 			continue
 		}
-		out = append(out, byLabel.Or(root.GetByPlaceholder(f.Label, playwright.LocatorGetByPlaceholderOptions{Exact: playwright.Bool(exact)})))
+		out = append(out, byLabel.Or(root.GetByPlaceholder(match(f.Label, exact), playwright.LocatorGetByPlaceholderOptions{Exact: playwright.Bool(exact)})))
 	}
 	return out
 }
@@ -359,7 +359,7 @@ func (r *runner) clickTarget(root playwright.Locator, a scenario.Action) (playwr
 	to := r.timeout()
 	switch {
 	case a.Row != "":
-		row := root.Locator("tr").Filter(playwright.LocatorFilterOptions{HasText: a.Row})
+		row := root.Locator("tr").Filter(playwright.LocatorFilterOptions{HasText: match(a.Row, false)})
 		if a.Nth != nil {
 			return r.find(to, fmt.Sprintf("button #%d in the row %q", *a.Nth, a.Row),
 				row.First().Locator("button").Locator("visible=true").Nth(*a.Nth))
@@ -409,7 +409,7 @@ func (r *runner) pick(timeout time.Duration, nth *int, what string, cands ...pla
 // No substring fallback: a hidden "Settings" child would otherwise match a
 // visible "General settings" entry elsewhere in the menu.
 func (r *runner) entry(root playwright.Locator, name string) []playwright.Locator {
-	opts := playwright.LocatorGetByRoleOptions{Name: name, Exact: playwright.Bool(true)}
+	opts := playwright.LocatorGetByRoleOptions{Name: match(name, true), Exact: playwright.Bool(true)}
 	return []playwright.Locator{root.GetByRole("link", opts).Or(root.GetByRole("button", opts))}
 }
 
@@ -452,15 +452,16 @@ func (r *runner) selectOption(root playwright.Locator, a scenario.Action) error 
 }
 
 // pickOption applies the matching rule to a native select: exact label
-// first, then case-insensitive substring.
+// first, then case-insensitive substring, any spaces alike.
 func pickOption(opts []string, want string) (string, bool) {
+	want = sameSpacing(want)
 	for _, o := range opts {
-		if strings.TrimSpace(o) == want {
+		if sameSpacing(o) == want {
 			return o, true
 		}
 	}
 	for _, o := range opts {
-		if strings.Contains(strings.ToLower(o), strings.ToLower(want)) {
+		if strings.Contains(strings.ToLower(sameSpacing(o)), strings.ToLower(want)) {
 			return o, true
 		}
 	}
