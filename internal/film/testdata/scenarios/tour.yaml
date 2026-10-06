@@ -86,6 +86,12 @@ steps:
       - click: Log out
     see: [Logged out]
     expect: logged out
+  - caption: Pick a city as soon as the list arrives
+    do:
+      - click: New address
+      - select: {field: City, option: Lyon}
+    see: ["City: Lyon"]
+    expect: Lyon is picked
   - caption: Check the mail
     do:
       - open: {{.Mail}}

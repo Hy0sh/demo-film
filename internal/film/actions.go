@@ -21,14 +21,15 @@ const (
 	afterAction = 700 * time.Millisecond // the effect is seen before the next gesture
 )
 
-// runner plays the actions of a scenario on a page. Filming adds the
-// pauses and the visible typing a viewer needs; rehearsing skips them.
+// runner plays the actions of a scenario on a page. Paced, as when filming
+// or in a paced rehearsal, it adds the pauses and the visible typing a
+// viewer needs; a plain rehearsal skips them.
 type runner struct {
-	s       *scenario.Scenario
-	page    playwright.Page
-	filming bool
-	x, y    float64 // last cursor position, where the next travel starts
-	cuts    []span  // the waits marked cut, removed from the video
+	s     *scenario.Scenario
+	page  playwright.Page
+	paced bool
+	x, y  float64 // last cursor position, where the next travel starts
+	cuts  []span  // the waits marked cut, removed from the video
 }
 
 // span is a stretch of wall-clock time.
@@ -74,7 +75,7 @@ var cardJS string
 func (r *runner) timeout() time.Duration { return time.Duration(r.s.Timeout) * time.Second }
 
 func (r *runner) pause(d time.Duration) {
-	if r.filming {
+	if r.paced {
 		time.Sleep(d) // the recording runs meanwhile: the pause is the point
 	}
 }
@@ -181,7 +182,7 @@ func (r *runner) travel(loc playwright.Locator) error {
 		return fmt.Errorf("element has no box: %v", err)
 	}
 	tx, ty := box.X+box.Width/2, box.Y+box.Height/2
-	if r.filming {
+	if r.paced {
 		// Playwright's Steps option sends every step at once: animate in real time.
 		n := max(int(r.gesture(travelTime)/travelFrame), 1)
 		for i := 1; i <= n; i++ {
@@ -304,7 +305,7 @@ func (r *runner) do(a scenario.Action) error {
 			}
 			return nil
 		}
-		if !r.filming {
+		if !r.paced {
 			return loc.Fill(a.Value)
 		}
 		if err := loc.Fill(""); err != nil {
@@ -319,7 +320,7 @@ func (r *runner) do(a scenario.Action) error {
 		return r.page.Keyboard().Press(a.Text)
 
 	case scenario.Type:
-		if !r.filming {
+		if !r.paced {
 			return r.page.Keyboard().Type(a.Text)
 		}
 		return r.page.Keyboard().Type(a.Text, playwright.KeyboardTypeOptions{Delay: playwright.Float(typingDelay / r.s.Speed)})
@@ -342,7 +343,7 @@ func (r *runner) do(a scenario.Action) error {
 			_, err := r.find(to, fmt.Sprintf("%q", a.Text), r.byText(root, a.Text)...)
 			return err
 		}
-		if !a.Cut || !r.filming {
+		if !a.Cut || !r.paced {
 			return find()
 		}
 		return r.cutWait(find)
@@ -479,16 +480,23 @@ func (r *runner) selectOption(root playwright.Locator, a scenario.Action) error 
 	if err := r.travel(loc); err != nil {
 		return err
 	}
-	opts, err := loc.Locator("option").AllInnerTexts()
-	if err != nil {
-		return err
+	// Options often arrive after the select itself: look again until the
+	// timeout before saying the option is missing.
+	deadline := time.Now().Add(r.timeout())
+	for {
+		opts, err := loc.Locator("option").AllInnerTexts()
+		if err != nil {
+			return err
+		}
+		if label, ok := pickOption(opts, a.Option); ok {
+			_, err = loc.SelectOption(playwright.SelectOptionValues{Labels: &[]string{label}})
+			return err
+		}
+		if !time.Now().Before(deadline) {
+			return fmt.Errorf("select %s has no option %q within %s (options: %q)", a.Field, a.Option, r.timeout(), opts)
+		}
+		time.Sleep(pollEvery)
 	}
-	label, ok := pickOption(opts, a.Option)
-	if !ok {
-		return fmt.Errorf("select %s has no option %q (options: %q)", a.Field, a.Option, opts)
-	}
-	_, err = loc.SelectOption(playwright.SelectOptionValues{Labels: &[]string{label}})
-	return err
 }
 
 // pickOption applies the matching rule to a native select: exact label

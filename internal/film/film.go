@@ -35,7 +35,7 @@ func Film(s *scenario.Scenario, outDir string) error {
 		return err
 	}
 	defer ses.close()
-	r := &runner{s: s, page: ses.page, filming: true}
+	r := &runner{s: s, page: ses.page, paced: true}
 
 	// Pre-roll: when step 1 opens with `open`, the app loads off camera and
 	// the video is cut from the moment it shows, not from the blank page.

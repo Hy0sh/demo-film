@@ -14,6 +14,9 @@ bump carries new commands or new behaviour, a patch bump carries fixes.
   `timeout` and `cut`. They replace the hovers scenarios used to buy time,
   which showed as stray cursor moves in the video. A toast pauses while
   hovered, and a rehearsal's cursor lands on it at once: wait for it to go.
+- `rehearse --paced` plays at the take's pace (captions read and held,
+  cursor travel, typing) without video: slower, but what depends on time
+  behaves as in the take.
 
 ### Fixed
 
@@ -22,6 +25,8 @@ bump carries new commands or new behaviour, a patch bump carries fixes.
   with U+202F, was not found from a scenario typed with a plain space,
   though the list of visible names showed it. Applies to texts, roles and
   names, labels, placeholders, menu entries, table rows and select options.
+- `select` failed at once when its options had not loaded yet (fetched
+  after the select showed); it now looks for the option until the timeout.
 
 ## [0.4.0] - 2026-10-06
 

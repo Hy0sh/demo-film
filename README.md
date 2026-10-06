@@ -38,14 +38,17 @@ Shell completion (bash/zsh/fish/powershell) comes from Cobra:
 | Command | Does |
 |---|---|
 | `demo-film check <scenario.yaml>` | validates the scenario, no browser; exit 1 with every problem listed |
-| `demo-film rehearse <scenario.yaml> [-o dir]` | plays every step with no pause and no video, asserting `see`; on failure exit 1, names the step and writes `rehearse-fail-step<N>.png` (full page) in `dir` (default: the current directory) |
+| `demo-film rehearse <scenario.yaml> [-o dir] [--paced]` | plays every step with no pause and no video, asserting `see`; on failure exit 1, names the step and writes `rehearse-fail-step<N>.png` (full page) in `dir` (default: the current directory). `--paced` plays at the take's pace (captions read and held, cursor travel, typing), still without video |
 | `demo-film film <scenario.yaml> -o <dir>` | records `<dir>/demo.mp4` and `<dir>/chapters.md`; a failing step aborts and writes nothing |
 | `demo-film join <dir> <dir>... -o <dir>` | joins the outputs of several `film` runs, in order, into one `demo.mp4` and `chapters.md`; see below |
 | `demo-film install` | installs the Playwright driver and Chromium |
 | `demo-film --version` | prints the version |
 
 Rehearse first, film when it is green. Pass the full scenario through
-`check` while writing it.
+`check` while writing it. A plain rehearsal has no pause, so what depends
+on time can differ from the take: when a step passes in one and not the
+other, make the scenario wait for what it needs (`wait: {gone}`,
+`wait: {enabled}`), then check with `rehearse --paced` before filming.
 
 ### A long film in parts
 
@@ -156,7 +159,7 @@ is visible, character by character.
 | `click: {row: "text in a row", button: "Edit"}` | click the button, by accessible name, in the first table row containing the text |
 | `click: {row: "text in a row", button: {nth: -2}}` | same, by index among the row's buttons (negative counts from the end), for icon-only buttons |
 | `fill: {field: "Email", value: "..."}` | type in the field found by label or placeholder; `field: password` is the password input; `field: 2` is the 2nd visible text control (1-based) |
-| `select: {field: "Category", option: "Lighting"}` | native `<select>`, by label or by rank (among the page's selects); option by visible label |
+| `select: {field: "Category", option: "Lighting"}` | native `<select>`, by label or by rank (among the page's selects); option by visible label, waited for until the timeout when the options load late |
 | `press: Enter` | press a key |
 | `type: "ls -l"` | type the text, visibly, into whatever has the focus (a terminal) |
 | `hover: "Visible text"` | move the cursor onto the element |

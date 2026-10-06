@@ -17,6 +17,9 @@
 <!-- French typography: a narrow no-break space before the colon. -->
 <input placeholder="ex&#8239;: Natation" oninput="show('Sport: ' + this.value)">
 <button onclick="show('Group saved')">Enregistrer&nbsp;le&nbsp;groupe</button>
+<!-- Its options arrive a second after New address, as from an API. -->
+<button onclick="loadCities()">New address</button>
+<label>City <select id="city" onchange="show('City: ' + this.value)"><option>Loading…</option></select></label>
 <p>
   <button onclick="setTimeout(() => document.getElementById('pay').disabled = false, 1500)">Load the list</button>
   <button id="pay" disabled onclick="show('Paid')">Pay</button>
@@ -53,6 +56,11 @@
 <script>
 const show = t => { document.getElementById('state').textContent = t; };
 document.getElementById('month').textContent = new Date(2026, 9, 6).toLocaleDateString(undefined, { month: 'long' });
+function loadCities() {
+  const city = document.getElementById('city');
+  city.innerHTML = '<option>Loading…</option>';
+  setTimeout(() => city.innerHTML = '<option>Paris</option><option>Lyon</option>', 1000);
+}
 const slowJob = 12000; // ms, a task long enough for a cut to matter
 // A toast over the Log out button, gone after 1.5 s; like real toast
 // libraries, it pauses while the mouse is over it.
