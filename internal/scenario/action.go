@@ -36,6 +36,7 @@ type Action struct {
 	Menu []string // menu: parent, child
 
 	Role, Name string // click by role
+	Match      *int   // click by text or role: which visible match, from 0 (negative counts from the end)
 	Row        string // click in a table row...
 	Button     string // ...the button, by accessible name
 	Nth        *int   // ...or by index (negative counts from the end)
@@ -163,22 +164,24 @@ func (a *Action) UnmarshalYAML(n *yaml.Node) error {
 	return nil
 }
 
-// decodeClick reads the three shapes of click: a text, {role, name}, or
-// {row, button} where button is a name or {nth: N}.
+// decodeClick reads the shapes of click: a text, {text, nth},
+// {role, name[, nth]}, or {row, button} where button is a name or {nth: N}.
 func (a *Action) decodeClick(n *yaml.Node) error {
 	if n.Kind == yaml.ScalarNode {
 		return n.Decode(&a.Text)
 	}
 	var c struct {
+		Text   string    `yaml:"text"`
 		Role   string    `yaml:"role"`
 		Name   string    `yaml:"name"`
+		Nth    *int      `yaml:"nth"`
 		Row    string    `yaml:"row"`
 		Button yaml.Node `yaml:"button"`
 	}
 	if err := decodeStrict(n, &c); err != nil {
 		return err
 	}
-	a.Role, a.Name, a.Row = c.Role, c.Name, c.Row
+	a.Text, a.Role, a.Name, a.Match, a.Row = c.Text, c.Role, c.Name, c.Nth, c.Row
 	switch c.Button.Kind {
 	case 0:
 	case yaml.ScalarNode:
@@ -216,6 +219,9 @@ func (a Action) String() string {
 			s = fmt.Sprintf("click %s %q", a.Role, a.Name)
 		default:
 			s = fmt.Sprintf("click %q", a.Text)
+		}
+		if a.Match != nil {
+			s += fmt.Sprintf(" (match #%d)", *a.Match)
 		}
 	case Fill:
 		s = fmt.Sprintf("fill %s with %q", a.Field, a.Value)

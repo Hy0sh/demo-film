@@ -54,6 +54,16 @@ steps:
       - hover: Help
     see: [Help tooltip]
     expect: the tooltip
+  - caption: Book the second of three identical slots
+    do:
+      - click: {text: "11h30 – 13h30", nth: 1}
+    see: [Tuesday booked]
+    expect: Tuesday is booked
+  - caption: Open the last card's actions
+    do:
+      - click: {role: button, name: Actions, nth: -1}
+    see: [Card two actions]
+    expect: the last card's menu
   - caption: Walk through the wizard
     do:
       - click: {role: button, name: Open wizard}
@@ -183,6 +193,19 @@ steps:
 	}
 	if _, err := os.Stat(filepath.Join(dir, "demo.mp4")); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestRehearseNamesHowManyMatchWhenNthIsOutOfRange(t *testing.T) {
+	requireTools(t)
+	app, mail := newApps(t)
+	s := scenarioFor(t, app.URL, mail.URL)
+	s.Timeout = 1
+	five := 5
+	s.Steps[4].Do[0].Match = &five
+	err := film.Rehearse(s, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "nth 5 is out of range: 3 visible elements match") {
+		t.Fatalf("want the match count, got %v", err)
 	}
 }
 

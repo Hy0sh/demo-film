@@ -8,6 +8,9 @@ bump carries new commands or new behaviour, a patch bump carries fixes.
 
 ### Added
 
+- `nth` on `click` by text or by role and name picks among several visible
+  matches (one slot per day, one "Actions" button per card), from 0,
+  negative from the end; out of range, the error says how many match.
 - `cut: true` on `wait` removes a long task from the video: it jumps to the
   moment the awaited text shows, under a transition card that reads
   "⏩ 2:14 later" before fading onto the result. `timeout: N` on `wait`

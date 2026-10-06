@@ -147,6 +147,7 @@ is visible, character by character.
 | `menu: [Parent, Child]` | click the navigation entry (link or button, by accessible name); if the child is not visible, click the parent first |
 | `click: "Visible text"` | click the element showing that text |
 | `click: {role: button, name: "Save"}` | click by role and accessible name |
+| `click: {text: "11h30", nth: 1}` · `{role: button, name: "Actions", nth: -1}` | the nth visible match, from 0 (negative counts from the end), when several share a text or a name; out of range says how many match |
 | `click: {row: "text in a row", button: "Edit"}` | click the button, by accessible name, in the first table row containing the text |
 | `click: {row: "text in a row", button: {nth: -2}}` | same, by index among the row's buttons (negative counts from the end), for icon-only buttons |
 | `fill: {field: "Email", value: "..."}` | type in the field found by label or placeholder; `field: password` is the password input; `field: 2` is the 2nd visible text control (1-based) |

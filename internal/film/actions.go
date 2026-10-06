@@ -358,9 +358,42 @@ func (r *runner) clickTarget(root playwright.Locator, a scenario.Action) (playwr
 		return r.find(to, fmt.Sprintf("button %q in the row %q", a.Button, a.Row),
 			r.byName(row.First(), "button", a.Button)...)
 	case a.Role != "":
-		return r.find(to, fmt.Sprintf("%s %q", a.Role, a.Name), r.byName(root, a.Role, a.Name)...)
+		return r.pick(to, a.Match, fmt.Sprintf("%s %q", a.Role, a.Name), r.byName(root, a.Role, a.Name)...)
 	}
-	return r.find(to, fmt.Sprintf("%q", a.Text), r.byText(root, a.Text)...)
+	return r.pick(to, a.Match, fmt.Sprintf("%q", a.Text), r.byText(root, a.Text)...)
+}
+
+// pick is find, or with nth, the nth visible match (from 0, negative from
+// the end) of the first candidate that has any: several buttons may share a
+// text, one per day or per card. Out of range names how many match.
+func (r *runner) pick(timeout time.Duration, nth *int, what string, cands ...playwright.Locator) (playwright.Locator, error) {
+	if nth == nil {
+		return r.find(timeout, what, cands...)
+	}
+	deadline := time.Now().Add(timeout)
+	found := 0
+	for {
+		for _, c := range cands {
+			vis := c.Locator("visible=true")
+			n, err := vis.Count()
+			if err != nil || n == 0 {
+				continue
+			}
+			found = n
+			if i := *nth; i < n && i >= -n {
+				return vis.Nth(i), nil
+			}
+			break
+		}
+		if !time.Now().Before(deadline) {
+			break
+		}
+		time.Sleep(pollEvery)
+	}
+	if found == 0 {
+		return nil, fmt.Errorf("nothing visible matched %s within %s%s", what, timeout, r.suggest())
+	}
+	return nil, fmt.Errorf("nth %d is out of range: %d visible elements match %s", *nth, found, what)
 }
 
 // entry is a navigation entry: a link or a button, by exact accessible name.

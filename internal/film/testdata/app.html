@@ -21,6 +21,16 @@
   <tr><td>Grace</td><td><button aria-label="Edit" onclick="show('Editing Grace')">&#9998;</button></td></tr>
 </table>
 <span id="help" onmouseenter="show('Help tooltip')">Help</span>
+<p>
+  <button onclick="show('Monday booked')">11h30 – 13h30</button>
+  <button onclick="show('Tuesday booked')">11h30 – 13h30</button>
+  <button onclick="show('Wednesday booked')">11h30 – 13h30</button>
+</p>
+<p>
+  <button aria-label="Actions" onclick="show('Board actions')">&#8942;</button>
+  <button aria-label="Actions" onclick="show('Card one actions')">&#8942;</button>
+  <button aria-label="Actions" onclick="show('Card two actions')">&#8942;</button>
+</p>
 <button onclick="openWizard()">Open wizard</button>
 <button onclick="setTimeout(() => show('Export done'), slowJob)">Start export</button>
 <a href="/docs" target="_blank">Docs</a>
