@@ -6,6 +6,8 @@ bump carries new commands or new behaviour, a patch bump carries fixes.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-07
+
 ### Changed
 
 - `locale` now sets the words of the caption band and the cards too: `fr`
@@ -116,7 +118,8 @@ First version: film a web app demo headless from a YAML scenario.
 - The video starts once the app shows: when step 1 starts with `open`, the
   page loads off camera and the blank page is cut.
 
-[Unreleased]: https://github.com/Hy0sh/demo-film/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/Hy0sh/demo-film/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/Hy0sh/demo-film/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Hy0sh/demo-film/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Hy0sh/demo-film/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Hy0sh/demo-film/compare/v0.2.0...v0.3.0
