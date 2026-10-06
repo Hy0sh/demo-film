@@ -6,6 +6,8 @@ bump carries new commands or new behaviour, a patch bump carries fixes.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-06
+
 ### Added
 
 - `nth` on `click` by text or by role and name picks among several visible
@@ -79,7 +81,8 @@ First version: film a web app demo headless from a YAML scenario.
 - The video starts once the app shows: when step 1 starts with `open`, the
   page loads off camera and the blank page is cut.
 
-[Unreleased]: https://github.com/Hy0sh/demo-film/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Hy0sh/demo-film/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Hy0sh/demo-film/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Hy0sh/demo-film/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Hy0sh/demo-film/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Hy0sh/demo-film/releases/tag/v0.1.0
