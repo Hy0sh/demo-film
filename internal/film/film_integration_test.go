@@ -153,6 +153,32 @@ steps:
 	}
 }
 
+func TestFilmWithAWatermark(t *testing.T) {
+	requireTools(t)
+	app, _ := newApps(t)
+	s, err := scenario.Parse([]byte(fmt.Sprintf(`
+title: Signed
+base_url: %s
+speed: 4
+watermark: {text: "© Demo", position: top-right}
+steps:
+  - caption: Open the shop
+    do:
+      - open: /
+    see: [Home]
+    expect: the home page
+`, app.URL)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if errs := scenario.Validate(s); len(errs) > 0 {
+		t.Fatal(errs)
+	}
+	if err := film.Film(s, t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestJoin(t *testing.T) {
 	requireTools(t)
 	app, _ := newApps(t)

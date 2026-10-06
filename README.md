@@ -82,6 +82,10 @@ labels:                               # optional, English defaults shown
   check: check                        #   "Step 2/5 · check E3"
   see: "You should see:"
   later: later                        #   "⏩ 2:14 later", after a cut
+watermark:                            # optional, signs the whole video
+  text: "© Some Co"                   #   or image: logo.png (relative to this file)
+  position: bottom-right              #   top-left, top-right, bottom-left, bottom-right
+  opacity: 0.6                        #   default
 steps:
   - caption: string                   # shown BEFORE the actions
     check: string                     # optional tag of the acceptance point, e.g. "E3"
@@ -126,6 +130,10 @@ steps:
   filming (dev toolbars, debug overlays).
 - `labels` lets a demo speak another language without hardcoding it, e.g.
   `{step: "Étape", check: "vérifie", see: "Tu dois voir :"}`.
+- `watermark` lays an image, or a line of white shadowed text, 24 px from a
+  corner of the page area for the whole video; it never covers the caption
+  band. The image is used at its own size. `join` leaves its title cards
+  bare: each part carries its own watermark.
 
 ### Actions
 

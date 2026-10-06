@@ -45,6 +45,17 @@ func TestChapters(t *testing.T) {
 	}
 }
 
+func TestWatermarkFilter(t *testing.T) {
+	for pos, want := range map[string]string{
+		"top-left":     ";[3:v]format=rgba,colorchannelmixer=aa=0.60[wm];[v2][wm]overlay=24:24[v3]",
+		"bottom-right": ";[3:v]format=rgba,colorchannelmixer=aa=0.60[wm];[v2][wm]overlay=W-w-24:900-h-24[v3]",
+	} {
+		if got := WatermarkFilter(3, 2, pos, 0.6, 900); got != want {
+			t.Errorf("%s: got\n%s\nwant\n%s", pos, got, want)
+		}
+	}
+}
+
 func TestJoinChapters(t *testing.T) {
 	a := Chapters("Agent", []Chapter{{N: 1, At: 0, Caption: "Log in", Expect: "home"}, {N: 2, At: 59 * time.Second, Caption: "a | b", Expect: "x"}})
 	b := Chapters("Citizen", []Chapter{{N: 1, Check: "E|3", At: 5 * time.Second, Caption: "Sign up", Expect: "y"}})

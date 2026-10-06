@@ -19,6 +19,8 @@ bump carries new commands or new behaviour, a patch bump carries fixes.
 - `join` assembles several films into one, a title card before each and
   their chapters merged with shifted times. `film` now records the speed in
   the mp4, which `join` needs: films made before cannot be joined.
+- `watermark` signs a video with an image or a line of text, in a corner of
+  the page area, at a chosen opacity.
 
 ### Fixed
 

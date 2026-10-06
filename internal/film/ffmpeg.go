@@ -41,6 +41,24 @@ func Filter(width, height int, keep, windows []Window) string {
 	return b.String()
 }
 
+// watermarkMargin is the gap between the watermark and the page's edges.
+const watermarkMargin = 24
+
+// WatermarkFilter overlays input `in` (the watermark image) on the stream
+// [v<last>] at that opacity, in a corner of the page area (height is the
+// page's, so the band stays clear), into [v<last+1>].
+func WatermarkFilter(in, last int, position string, opacity float64, height int) string {
+	m := watermarkMargin
+	x, y := fmt.Sprint(m), fmt.Sprint(m)
+	if strings.HasSuffix(position, "right") {
+		x = fmt.Sprintf("W-w-%d", m)
+	}
+	if strings.HasPrefix(position, "bottom") {
+		y = fmt.Sprintf("%d-h-%d", height, m)
+	}
+	return fmt.Sprintf(";[%d:v]format=rgba,colorchannelmixer=aa=%.2f[wm];[v%d][wm]overlay=%s:%s[v%d]", in, opacity, last, x, y, last+1)
+}
+
 // speedTag is the mp4 metadata key holding the scenario's speed, which join
 // needs to pace its title cards and to refuse mixed speeds.
 const speedTag = "demo_film_speed"
