@@ -145,6 +145,12 @@ func validateAction(a Action) []string {
 			e = append(e, "within is allowed on click, fill, select, hover and wait only")
 		}
 	}
+	if (a.Cut || a.Timeout != 0) && a.Kind != Wait {
+		e = append(e, "cut and timeout are allowed on wait only")
+	}
+	if a.Timeout < 0 {
+		e = append(e, "timeout must be positive")
+	}
 	switch a.Kind {
 	case Open, Hover, Wait, Press, Confirm:
 		need(strings.TrimSpace(a.Text) != "", "the value is empty")

@@ -28,7 +28,43 @@ type runner struct {
 	page    playwright.Page
 	filming bool
 	x, y    float64 // last cursor position, where the next travel starts
+	cuts    []span  // the waits marked cut, removed from the video
 }
+
+// span is a stretch of wall-clock time.
+type span struct{ from, to time.Time }
+
+// cutTotal is the time the cuts so far remove from the video.
+func (r *runner) cutTotal() time.Duration {
+	var d time.Duration
+	for _, c := range r.cuts {
+		d += c.to.Sub(c.from)
+	}
+	return d
+}
+
+// laterBadge is how long the "⏩ 2:14 later" badge shows after a cut.
+const laterBadge = 1500 * time.Millisecond
+
+// later shows a badge naming the time a cut skipped, so the viewer sees
+// that the film jumped: a cut never passes for an instant task.
+func (r *runner) later(skipped time.Duration) error {
+	text := "⏩ " + Clock(skipped) + " " + r.s.Labels.Later
+	if _, err := r.page.Evaluate(laterJS, text); err != nil {
+		return err
+	}
+	r.pause(max(r.gesture(laterBadge), minShown))
+	_, err := r.page.Evaluate(`() => document.getElementById("__demo_later")?.remove()`)
+	return err
+}
+
+const laterJS = `text => {
+  const b = document.createElement("div");
+  b.id = "__demo_later";
+  b.textContent = text;
+  b.style.cssText = "position:fixed;z-index:2147483647;top:24px;right:24px;padding:10px 18px;border-radius:8px;background:#2457a6;color:#fff;font:600 22px system-ui,sans-serif;pointer-events:none";
+  document.documentElement.appendChild(b);
+}`
 
 func (r *runner) timeout() time.Duration { return time.Duration(r.s.Timeout) * time.Second }
 
@@ -206,6 +242,9 @@ func (r *runner) field(root playwright.Locator, f scenario.Field, selects bool) 
 func (r *runner) do(a scenario.Action) error {
 	root := r.root(a)
 	to := r.timeout()
+	if a.Timeout > 0 {
+		to = time.Duration(a.Timeout) * time.Second
+	}
 	switch a.Kind {
 	case scenario.Open:
 		url, err := scenario.ResolveURL(r.s.BaseURL, a.Text)
@@ -269,8 +308,12 @@ func (r *runner) do(a scenario.Action) error {
 		return r.travel(loc)
 
 	case scenario.Wait:
-		_, err := r.find(to, fmt.Sprintf("%q", a.Text), r.byText(root, a.Text)...)
-		return err
+		from := time.Now()
+		if _, err := r.find(to, fmt.Sprintf("%q", a.Text), r.byText(root, a.Text)...); err != nil || !a.Cut || !r.filming {
+			return err
+		}
+		r.cuts = append(r.cuts, span{from, time.Now()})
+		return r.later(time.Since(from))
 
 	case scenario.Popup:
 		return r.popup(root, a)

@@ -43,6 +43,7 @@ type Labels struct {
 	Step  string `yaml:"step"`
 	See   string `yaml:"see"`
 	Check string `yaml:"check"`
+	Later string `yaml:"later"` // the badge after a cut: "⏩ 2:14 later"
 }
 
 // Step is one caption, the actions it films, and what must be on screen after.
@@ -80,6 +81,9 @@ func Parse(data []byte) (*Scenario, error) {
 	}
 	if s.Labels.Check == "" {
 		s.Labels.Check = "check"
+	}
+	if s.Labels.Later == "" {
+		s.Labels.Later = "later"
 	}
 	return &s, nil
 }

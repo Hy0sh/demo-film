@@ -6,6 +6,13 @@ bump carries new commands or new behaviour, a patch bump carries fixes.
 
 ## [Unreleased]
 
+### Added
+
+- `cut: true` on `wait` removes a long task from the video: it jumps to the
+  moment the awaited text shows, and a "⏩ 2:14 later" badge marks the jump.
+  `timeout: N` on `wait` gives that task more than the scenario's timeout.
+  The badge's word comes from the new `labels.later`.
+
 ### Fixed
 
 - `fill` on a native date, month, week, time, datetime-local, colour or

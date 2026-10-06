@@ -58,6 +58,7 @@ labels:                               # optional, English defaults shown
   step: Step                          #   "Step 2/5"
   check: check                        #   "Step 2/5 · check E3"
   see: "You should see:"
+  later: later                        #   "⏩ 2:14 later", after a cut
 steps:
   - caption: string                   # shown BEFORE the actions
     check: string                     # optional tag of the acceptance point, e.g. "E3"
@@ -104,6 +105,20 @@ is visible, character by character.
 ```yaml
 - click: Next
   within: dialog
+```
+
+`cut: true` and `timeout: N` (seconds) are modifier keys allowed on `wait`.
+`timeout` gives a long task more than the scenario's timeout; `cut` removes
+the wait from the video: it jumps from the start of the wait to the moment
+the text shows, then a badge such as "⏩ 2:14 later" stays 1.5 s on the page,
+so a cut never passes for an instant task. Captions and chapters follow the
+cut video.
+
+```yaml
+- click: Start export
+- wait: Export done
+  cut: true
+  timeout: 600
 ```
 
 **Text matching**: exact visible text first, then case-insensitive

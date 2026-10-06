@@ -9,10 +9,23 @@ import (
 )
 
 func TestFilter(t *testing.T) {
-	got := Filter(1440, 900, []Window{{0, 3.5}, {3.5, 9.25}})
+	got := Filter(1440, 900, nil, []Window{{0, 3.5}, {3.5, 9.25}})
 	want := "[0:v]pad=1440:1050:0:0:color=0x11161b[v0]" +
 		";[v0][1:v]overlay=0:900:enable='between(t,0.00,3.50)'[v1]" +
 		";[v1][2:v]overlay=0:900:enable='between(t,3.50,9.25)'[v2]"
+	if got != want {
+		t.Errorf("Filter =\n%s\nwant\n%s", got, want)
+	}
+}
+
+func TestFilterWithCuts(t *testing.T) {
+	got := Filter(1440, 900, []Window{{0, 4}, {64, 70}}, []Window{{0, 9}})
+	want := "[0:v]split=2[k0][k1]" +
+		";[k0]trim=start=0.000:end=4.000,setpts=PTS-STARTPTS[s0]" +
+		";[k1]trim=start=64.000:end=70.000,setpts=PTS-STARTPTS[s1]" +
+		";[s0][s1]concat=n=2[cut]" +
+		";[cut]pad=1440:1050:0:0:color=0x11161b[v0]" +
+		";[v0][1:v]overlay=0:900:enable='between(t,0.00,9.00)'[v1]"
 	if got != want {
 		t.Errorf("Filter =\n%s\nwant\n%s", got, want)
 	}
