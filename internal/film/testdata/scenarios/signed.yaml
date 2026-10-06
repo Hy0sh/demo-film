@@ -1,0 +1,11 @@
+# The test app at {{.App}}, with a text watermark.
+title: Signed
+base_url: {{.App}}
+speed: 4
+watermark: {text: "© Demo", position: top-right}
+steps:
+  - caption: Open the shop
+    do:
+      - open: /
+    see: [Home]
+    expect: the home page

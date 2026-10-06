@@ -1,7 +1,6 @@
 package film_test
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,88 +16,7 @@ import (
 // scenarioFor covers every action of the vocabulary on the test app.
 func scenarioFor(t *testing.T, appURL, mailURL string) *scenario.Scenario {
 	t.Helper()
-	y := fmt.Sprintf(`
-title: Shop tour
-base_url: %s
-timeout: 5
-hide: ["#nothing"]
-locale: en
-labels: {step: "Étape", see: "Tu dois voir :", check: "vérifie"}
-steps:
-  - caption: Open the shop
-    check: E1
-    do:
-      - open: /
-      - wait: Home
-    see: [Home]
-    expect: the home page
-  - caption: Open the profile through the menu
-    do:
-      - menu: [Settings, Profile]
-    see: [Profile page]
-    expect: the profile page
-  - caption: Fill the form
-    do:
-      - fill: {field: Name, value: Ada}
-      - fill: {field: Search, value: lamp}
-      - press: Enter
-      - fill: {field: password, value: secret}
-      - fill: {field: 1, value: Ada Lovelace}
-      - fill: {field: Start, value: "2026-10-06"}
-      - fill: {field: Tint, value: "#AABBCC"}
-    see: ["Submitted: lamp", "Picked 2026-10-06"]
-    expect: the search was submitted
-  - caption: Use the table
-    do:
-      - click: {row: Ada, button: {nth: -1}}
-      - click: {row: Grace, button: Edit}
-      - hover: Help
-    see: [Help tooltip]
-    expect: the tooltip
-  - caption: Book the second of three identical slots
-    do:
-      - click: {text: "11h30 – 13h30", nth: 1}
-    see: [Tuesday booked]
-    expect: Tuesday is booked
-  - caption: Open the last card's actions
-    do:
-      - click: {role: button, name: Actions, nth: -1}
-    see: [Card two actions]
-    expect: the last card's menu
-  - caption: Walk through the wizard
-    do:
-      - click: {role: button, name: Open wizard}
-      - select: {field: Colour, option: Blue}
-        within: dialog
-      - click: Next
-        within: dialog
-      - wait: "Step two: Blue"
-        within: dialog
-      - click: Close
-        within: dialog
-      - confirm: Discard
-    see: [Wizard closed]
-    expect: the wizard is closed
-  - caption: Read the docs
-    do:
-      - popup: {click: Docs, url_contains: /docs}
-    see: [Home]
-    expect: still on the shop
-  - caption: Check the mail
-    do:
-      - open: %s
-    see: [Welcome mail, "Hello Ada, your order shipped"]
-    check: E2
-    expect: the mail
-`, appURL, mailURL)
-	s, err := scenario.Parse([]byte(y))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if errs := scenario.Validate(s); len(errs) > 0 {
-		t.Fatalf("test scenario invalid: %v", errs)
-	}
-	return s
+	return loadScenario(t, "tour", map[string]string{"App": appURL, "Mail": mailURL})
 }
 
 // requireTools skips the test unless a browser and ffmpeg are available.
@@ -167,24 +85,7 @@ func TestFilmATerminal(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(cwd, "marker.txt"), nil, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	s, err := scenario.Parse([]byte(fmt.Sprintf(`
-title: Shell
-terminal: {shell: sh, cwd: %s}
-timeout: 5
-steps:
-  - caption: Compute in the shell
-    do:
-      - type: echo $((6*7)); ls
-      - press: Enter
-    see: ["42", marker.txt]
-    expect: the answer and the files of cwd
-`, cwd)))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if errs := scenario.Validate(s); len(errs) > 0 {
-		t.Fatal(errs)
-	}
+	s := loadScenario(t, "terminal", map[string]string{"Cwd": cwd})
 	if err := film.Rehearse(s, t.TempDir()); err != nil {
 		t.Fatal(err)
 	}

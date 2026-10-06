@@ -1,0 +1,27 @@
+# A sound scenario using the whole vocabulary. The rule tests break it one
+# line at a time and expect the matching problem.
+title: Tour
+base_url: http://localhost:3000
+steps:
+  - caption: Open the app
+    do:
+      - open: /
+      - wait: Home
+    see: [Home]
+    check: E1
+    expect: the home page
+  - caption: Open the form
+    do:
+      - menu: [Settings, Profile]
+      - click: {role: button, name: Edit}
+      - fill: {field: Name, value: Ada}
+      - select: {field: 2, option: Blue}
+      - click: {row: Ada, button: {nth: -2}}
+      - click: {row: Ada, button: Edit}
+      - hover: Help
+      - press: Enter
+      - popup: {click: Docs, url_contains: /docs}
+      - click: Save
+        within: dialog
+      - confirm: Discard
+    expect: the form
