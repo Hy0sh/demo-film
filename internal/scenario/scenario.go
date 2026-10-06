@@ -25,9 +25,9 @@ type Scenario struct {
 	Hide     []string `yaml:"hide"`
 	// Timeout is the budget of one action, in seconds.
 	Timeout int `yaml:"timeout"`
-	// Speed scales the gestures (cursor travel, pauses around actions,
-	// typing): 1 is the default, 0.5 twice as slow, 2 twice as fast.
-	// Caption read times are not affected.
+	// Speed scales the whole video, gestures (cursor travel, pauses around
+	// actions, typing) and caption read/hold times: 1 is the default, 0.5
+	// twice as slow, 2 twice as fast.
 	Speed  float64 `yaml:"speed"`
 	Labels Labels  `yaml:"labels"`
 	Steps  []Step  `yaml:"steps"`

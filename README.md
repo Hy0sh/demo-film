@@ -53,7 +53,7 @@ viewport: {width: 1440, height: 900}  # optional, this is the default; both even
 locale: fr                            # optional, see below
 hide: ["css selector", ...]           # optional, see below
 timeout: 15                           # optional, seconds per action
-speed: 1                              # optional, 0.25 to 4: gestures only (0.5 = twice as slow)
+speed: 1                              # optional, 0.25 to 4: whole video (0.5 = twice as slow)
 labels:                               # optional, English defaults shown
   step: Step                          #   "Step 2/5"
   check: check                        #   "Step 2/5 · check E3"
@@ -120,7 +120,9 @@ always films the same video.
 Gestures are paced for a human eye: the cursor travels to its target in
 0.7 s with a smooth start and stop, rests 0.6 s before the click, and the
 effect stays 0.7 s before the next action; typing takes 70 ms per
-character. `speed` scales these gestures only, never the captions.
+character. `speed` scales these gestures and the caption times: at 2 the whole video
+runs about twice as fast (a caption or a "you should see" state is never
+shown for less than 1.2 s), at 0.5 about twice as slow.
 
 When step 1 starts with `open`, that page loads off camera: the video
 starts once the app shows (network idle), not on a blank page, and the

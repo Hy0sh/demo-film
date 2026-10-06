@@ -15,16 +15,28 @@ const (
 	maxWait = 9 * time.Second
 )
 
-func clamp(text string, floor time.Duration) time.Duration {
+// minShown is the least a caption stays on screen at any speed: under about
+// a second a changing caption cannot be read.
+const minShown = 1200 * time.Millisecond
+
+// scaled is the time to read text at that speed: the length-based time,
+// floored and capped as at speed 1, then divided by the speed, never under
+// minShown.
+func scaled(text string, floor time.Duration, speed float64) time.Duration {
 	d := time.Duration(utf8.RuneCountInString(text)) * perChar
-	return min(max(d, floor), maxWait)
+	d = min(max(d, floor), maxWait)
+	return max(time.Duration(float64(d)/speed), minShown)
 }
 
 // ReadTime is how long a caption stays alone before the actions start.
-func ReadTime(caption string) time.Duration { return clamp(caption, minRead) }
+func ReadTime(caption string, speed float64) time.Duration {
+	return scaled(caption, minRead, speed)
+}
 
 // HoldTime is how long the "you should see" state stays after the actions.
-func HoldTime(expect string) time.Duration { return clamp(expect, minHold) }
+func HoldTime(expect string, speed float64) time.Duration {
+	return scaled(expect, minHold, speed)
+}
 
 // Clock renders a duration as m:ss.
 func Clock(d time.Duration) string {

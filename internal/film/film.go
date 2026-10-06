@@ -57,12 +57,12 @@ func Film(s *scenario.Scenario, outDir string) error {
 		at := since()
 		starts = append(starts, at)
 		chapters = append(chapters, Chapter{N: i + 1, Check: st.Check, At: at, Caption: st.Caption, Expect: st.Expect})
-		r.pause(ReadTime(st.Caption))
+		r.pause(ReadTime(st.Caption, s.Speed))
 		if err := r.runStep(i+1, st); err != nil {
 			return err
 		}
 		starts = append(starts, since())
-		r.pause(HoldTime(st.Expect))
+		r.pause(HoldTime(st.Expect, s.Speed))
 	}
 	end := since()
 
