@@ -6,6 +6,8 @@ bump carries new commands or new behaviour, a patch bump carries fixes.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-07
+
 ### Added
 
 - `wait: {gone: "text"}` waits until nothing visible shows the text (a
@@ -103,7 +105,8 @@ First version: film a web app demo headless from a YAML scenario.
 - The video starts once the app shows: when step 1 starts with `open`, the
   page loads off camera and the blank page is cut.
 
-[Unreleased]: https://github.com/Hy0sh/demo-film/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/Hy0sh/demo-film/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/Hy0sh/demo-film/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Hy0sh/demo-film/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Hy0sh/demo-film/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Hy0sh/demo-film/compare/v0.1.0...v0.2.0
