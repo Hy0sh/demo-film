@@ -153,6 +153,66 @@ steps:
 	}
 }
 
+func TestJoin(t *testing.T) {
+	requireTools(t)
+	app, _ := newApps(t)
+	part := func(title string, viewport int) string {
+		s, err := scenario.Parse([]byte(fmt.Sprintf(`
+title: %s
+base_url: %s
+speed: 4
+viewport: {width: %d, height: 600}
+steps:
+  - caption: Open the shop
+    do:
+      - open: /
+    see: [Home]
+    expect: the home page
+`, title, app.URL, viewport)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		dir := t.TempDir()
+		if err := film.Film(s, dir); err != nil {
+			t.Fatal(err)
+		}
+		return dir
+	}
+	a, b := part("Agent side", 800), part("Citizen side", 800)
+
+	out := t.TempDir()
+	if err := film.Join([]string{a, b}, out, true); err != nil {
+		t.Fatal(err)
+	}
+	duration := func(dir string) float64 {
+		o, err := exec.Command("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", filepath.Join(dir, "demo.mp4")).Output()
+		if err != nil {
+			t.Fatal(err)
+		}
+		d, _ := strconv.ParseFloat(strings.TrimSpace(string(o)), 64)
+		return d
+	}
+	want := duration(a) + duration(b) + 2*film.CardTime(4).Seconds()
+	if got := duration(out); got < want-0.5 || got > want+0.5 {
+		t.Errorf("joined duration %.2fs, want %.2fs (both films and two cards)", got, want)
+	}
+	md, err := os.ReadFile(filepath.Join(out, "chapters.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, w := range []string{"## Agent side", "## Citizen side"} {
+		if !strings.Contains(string(md), w) {
+			t.Errorf("chapters.md lacks %q:\n%s", w, md)
+		}
+	}
+
+	// A part filmed at another viewport is refused, by name.
+	c := part("Odd one", 640)
+	if err := film.Join([]string{a, c}, t.TempDir(), true); err == nil || !strings.Contains(err.Error(), c) {
+		t.Errorf("want a refusal naming %s, got %v", c, err)
+	}
+}
+
 func TestFilmAbortsWithoutVideoWhenASeeFails(t *testing.T) {
 	requireTools(t)
 	app, mail := newApps(t)

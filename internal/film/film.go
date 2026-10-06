@@ -117,7 +117,7 @@ func Film(s *scenario.Scenario, outDir string) error {
 		keep = append(keep, Window{from, (end + r.cutTotal() + 2*time.Second).Seconds()})
 	}
 	filter := Filter(s.Viewport.Width, s.Viewport.Height, keep, windows)
-	if err := assemble(raw, offset, pngs, filter, filepath.Join(outDir, "demo.mp4"), len(windows)); err != nil {
+	if err := assemble(raw, offset, pngs, filter, filepath.Join(outDir, "demo.mp4"), len(windows), s.Speed); err != nil {
 		return err
 	}
 	return os.WriteFile(filepath.Join(outDir, "chapters.md"), []byte(Chapters(s.Title, chapters)), 0o644)

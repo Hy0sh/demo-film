@@ -16,6 +16,9 @@ bump carries new commands or new behaviour, a patch bump carries fixes.
 - `terminal` films a shell instead of a web app, served in the browser by
   ttyd (a new requirement, for terminal demos only), and the new `type`
   action types into it.
+- `join` assembles several films into one, a title card before each and
+  their chapters merged with shifted times. `film` now records the speed in
+  the mp4, which `join` needs: films made before cannot be joined.
 
 ### Fixed
 

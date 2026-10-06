@@ -41,17 +41,31 @@ func Filter(width, height int, keep, windows []Window) string {
 	return b.String()
 }
 
-// assemble writes the mp4: H.264, yuv420p, faststart. The raw video is cut
-// before skip (the pre-roll), so its time 0 is the first step's caption.
-func assemble(raw string, skip time.Duration, pngs []string, filter, out string, last int) error {
-	args := []string{"-y", "-loglevel", "error", "-ss", fmt.Sprintf("%.3f", skip.Seconds()), "-i", raw}
-	for _, p := range pngs {
-		args = append(args, "-i", p)
-	}
-	args = append(args, "-filter_complex", filter, "-map", fmt.Sprintf("[v%d]", last),
-		"-c:v", "libx264", "-pix_fmt", "yuv420p", "-movflags", "+faststart", out)
-	if msg, err := exec.Command("ffmpeg", args...).CombinedOutput(); err != nil {
+// speedTag is the mp4 metadata key holding the scenario's speed, which join
+// needs to pace its title cards and to refuse mixed speeds.
+const speedTag = "demo_film_speed"
+
+// encodeArgs end every ffmpeg run that writes a film: H.264, yuv420p,
+// faststart, and the speed tag.
+func encodeArgs(speed float64, out string) []string {
+	return []string{"-c:v", "libx264", "-pix_fmt", "yuv420p", "-movflags", "+faststart+use_metadata_tags",
+		"-metadata", fmt.Sprintf("%s=%g", speedTag, speed), out}
+}
+
+func ffmpeg(args ...string) error {
+	if msg, err := exec.Command("ffmpeg", append([]string{"-y", "-loglevel", "error"}, args...)...).CombinedOutput(); err != nil {
 		return fmt.Errorf("ffmpeg: %w\n%s", err, msg)
 	}
 	return nil
+}
+
+// assemble writes the mp4. The raw video is cut before skip (the pre-roll),
+// so its time 0 is the first step's caption.
+func assemble(raw string, skip time.Duration, pngs []string, filter, out string, last int, speed float64) error {
+	args := []string{"-ss", fmt.Sprintf("%.3f", skip.Seconds()), "-i", raw}
+	for _, p := range pngs {
+		args = append(args, "-i", p)
+	}
+	args = append(args, "-filter_complex", filter, "-map", fmt.Sprintf("[v%d]", last))
+	return ffmpeg(append(args, encodeArgs(speed, out)...)...)
 }

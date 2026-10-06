@@ -34,7 +34,7 @@ func newRoot() *cobra.Command {
 	}
 	root.SetVersionTemplate("demo-film {{.Version}}\n")
 	root.SetErr(os.Stderr)
-	root.AddCommand(checkCmd(), rehearseCmd(), filmCmd(), installCmd())
+	root.AddCommand(checkCmd(), rehearseCmd(), filmCmd(), joinCmd(), installCmd())
 	return root
 }
 
@@ -123,5 +123,28 @@ func filmCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVarP(&outDir, "out", "o", ".", "output directory")
+	return cmd
+}
+
+func joinCmd() *cobra.Command {
+	var outDir string
+	var noCards bool
+	cmd := &cobra.Command{
+		Use:   "join <film-dir> <film-dir>... -o <dir>",
+		Short: "Join the outputs of several films into one, a title card before each",
+		Args:  cobra.MinimumNArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := preflight.FFmpeg(); err != nil {
+				return fail(err)
+			}
+			if err := film.Join(args, outDir, !noCards); err != nil {
+				return fail(err)
+			}
+			fmt.Println(filepath.Join(outDir, "demo.mp4"))
+			return nil
+		},
+	}
+	cmd.Flags().StringVarP(&outDir, "out", "o", ".", "output directory")
+	cmd.Flags().BoolVar(&noCards, "no-cards", false, "no title card before each film")
 	return cmd
 }
