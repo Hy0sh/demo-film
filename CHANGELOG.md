@@ -9,9 +9,10 @@ bump carries new commands or new behaviour, a patch bump carries fixes.
 ### Added
 
 - `cut: true` on `wait` removes a long task from the video: it jumps to the
-  moment the awaited text shows, and a "⏩ 2:14 later" badge marks the jump.
-  `timeout: N` on `wait` gives that task more than the scenario's timeout.
-  The badge's word comes from the new `labels.later`.
+  moment the awaited text shows, under a transition card that reads
+  "⏩ 2:14 later" before fading onto the result. `timeout: N` on `wait`
+  gives that task more than the scenario's timeout. The card's word comes
+  from the new `labels.later`.
 
 ### Fixed
 

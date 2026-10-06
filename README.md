@@ -109,9 +109,10 @@ is visible, character by character.
 
 `cut: true` and `timeout: N` (seconds) are modifier keys allowed on `wait`.
 `timeout` gives a long task more than the scenario's timeout; `cut` removes
-the wait from the video: it jumps from the start of the wait to the moment
-the text shows, then a badge such as "⏩ 2:14 later" stays 1.5 s on the page,
-so a cut never passes for an instant task. Captions and chapters follow the
+the wait from the video: a transition card with a spinner covers the page
+for 1.2 s, the wait is cut out under it, then the card reads "⏩ 2:14 later"
+for 1.2 s and fades onto the result, so a cut never passes for an instant
+task. Captions and chapters follow the
 cut video.
 
 ```yaml

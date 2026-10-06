@@ -43,28 +43,33 @@ func (r *runner) cutTotal() time.Duration {
 	return d
 }
 
-// laterBadge is how long the "⏩ 2:14 later" badge shows after a cut.
-const laterBadge = 1500 * time.Millisecond
+// cardTime is how long the transition card shows on each side of a cut.
+const cardTime = 1200 * time.Millisecond
 
-// later shows a badge naming the time a cut skipped, so the viewer sees
+// cutWait plays a wait marked cut: a transition card covers the page with a
+// spinner, the wait happens under it and is cut out, then the card names the
+// time skipped ("⏩ 2:14 later") and fades onto the result. The viewer sees
 // that the film jumped: a cut never passes for an instant task.
-func (r *runner) later(skipped time.Duration) error {
-	text := "⏩ " + Clock(skipped) + " " + r.s.Labels.Later
-	if _, err := r.page.Evaluate(laterJS, text); err != nil {
+func (r *runner) cutWait(find func() error) error {
+	if _, err := r.page.Evaluate(cardJS, ""); err != nil {
 		return err
 	}
-	r.pause(max(r.gesture(laterBadge), minShown))
-	_, err := r.page.Evaluate(`() => document.getElementById("__demo_later")?.remove()`)
+	r.pause(r.gesture(cardTime))
+	from := time.Now()
+	if err := find(); err != nil {
+		return err
+	}
+	r.cuts = append(r.cuts, span{from, time.Now()})
+	if _, err := r.page.Evaluate(cardJS, "⏩ "+Clock(time.Since(from))+" "+r.s.Labels.Later); err != nil {
+		return err
+	}
+	r.pause(max(r.gesture(cardTime), minShown))
+	_, err := r.page.Evaluate(cardJS, nil)
 	return err
 }
 
-const laterJS = `text => {
-  const b = document.createElement("div");
-  b.id = "__demo_later";
-  b.textContent = text;
-  b.style.cssText = "position:fixed;z-index:2147483647;top:24px;right:24px;padding:10px 18px;border-radius:8px;background:#2457a6;color:#fff;font:600 22px system-ui,sans-serif;pointer-events:none";
-  document.documentElement.appendChild(b);
-}`
+//go:embed card.js
+var cardJS string
 
 func (r *runner) timeout() time.Duration { return time.Duration(r.s.Timeout) * time.Second }
 
@@ -308,12 +313,14 @@ func (r *runner) do(a scenario.Action) error {
 		return r.travel(loc)
 
 	case scenario.Wait:
-		from := time.Now()
-		if _, err := r.find(to, fmt.Sprintf("%q", a.Text), r.byText(root, a.Text)...); err != nil || !a.Cut || !r.filming {
+		find := func() error {
+			_, err := r.find(to, fmt.Sprintf("%q", a.Text), r.byText(root, a.Text)...)
 			return err
 		}
-		r.cuts = append(r.cuts, span{from, time.Now()})
-		return r.later(time.Since(from))
+		if !a.Cut || !r.filming {
+			return find()
+		}
+		return r.cutWait(find)
 
 	case scenario.Popup:
 		return r.popup(root, a)
