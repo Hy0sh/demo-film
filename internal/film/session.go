@@ -25,13 +25,24 @@ func launch(s *scenario.Scenario, videoDir string) (*session, error) {
 	if err != nil {
 		return nil, preflight.Browser(err)
 	}
-	browser, err := pw.Chromium.Launch()
+	var launchOpts playwright.BrowserTypeLaunchOptions
+	if s.Locale != "" {
+		// Native inputs (dates, months) are formatted in the browser
+		// process's language, which the context's locale does not reach.
+		launchOpts.Args = []string{"--lang=" + s.Locale}
+	}
+	browser, err := pw.Chromium.Launch(launchOpts)
 	if err != nil {
 		pw.Stop()
 		return nil, preflight.Browser(err)
 	}
 	vp := &playwright.Size{Width: s.Viewport.Width, Height: s.Viewport.Height}
 	opts := playwright.BrowserNewContextOptions{Viewport: vp}
+	if s.Locale != "" {
+		// The browser's own locale formats native inputs (dates, months) and
+		// sets Accept-Language, as i18next alone cannot.
+		opts.Locale = playwright.String(s.Locale)
+	}
 	if videoDir != "" {
 		opts.RecordVideo = &playwright.RecordVideo{Dir: playwright.String(videoDir), Size: vp}
 	}

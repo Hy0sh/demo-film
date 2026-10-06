@@ -133,6 +133,20 @@ func TestRehearseRefusesAPickerThatDropsItsValue(t *testing.T) {
 	}
 }
 
+// The context's locale is checked through Intl; the --lang that formats
+// native date inputs renders in their shadow DOM, out of reach of see.
+func TestLocaleReachesTheBrowser(t *testing.T) {
+	requireTools(t)
+	app, mail := newApps(t)
+	s := scenarioFor(t, app.URL, mail.URL)
+	s.Locale = "fr"
+	s.Steps = s.Steps[:1]
+	s.Steps[0].See = []string{"Month: octobre"}
+	if err := film.Rehearse(s, t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestRehearseFailsAtTheRightStep(t *testing.T) {
 	requireTools(t)
 	app, mail := newApps(t)

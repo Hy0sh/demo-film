@@ -15,6 +15,7 @@
 <label>Start <input type="date" onchange="document.getElementById('picked').textContent='Picked '+this.value"></label>
 <p id="picked"></p>
 <label>Locked <input type="date" oninput="this.value = ''"></label>
+<p>Month: <span id="month"></span></p>
 <table>
   <tr><td>Ada</td><td><button onclick="show('Editing Ada')">&#9998;</button><button onclick="show('Removed Ada')">&#128465;</button></td></tr>
   <tr><td>Grace</td><td><button aria-label="Edit" onclick="show('Editing Grace')">&#9998;</button></td></tr>
@@ -25,6 +26,7 @@
 <div id="slot"></div>
 <script>
 const show = t => { document.getElementById('state').textContent = t; };
+document.getElementById('month').textContent = new Date(2026, 9, 6).toLocaleDateString(undefined, { month: 'long' });
 function openWizard() {
   const d = document.createElement('div'); d.setAttribute('role', 'dialog');
   d.innerHTML = '<h2>Wizard</h2><label>Colour <select><option>Red</option><option>Blue</option></select></label>' +

@@ -13,6 +13,9 @@ bump carries new commands or new behaviour, a patch bump carries fixes.
   takes no typed characters, its value is now set at once. The step now
   fails when such a field does not hold the value given (an app rejecting
   it), instead of passing.
+- `locale` only set i18next: native date and month inputs, `Intl` and
+  `Accept-Language` stayed in English. It now sets the browser's language
+  too.
 
 ## [0.3.0] - 2026-10-06
 
