@@ -96,7 +96,15 @@ func TestCardTime(t *testing.T) {
 func TestBandHTML(t *testing.T) {
 	l := scenario.Labels{Step: "Étape", See: "Tu dois voir :", Check: "vérifie"}
 	st := scenario.Step{Caption: "Click <b>", Check: "E3", Expect: "a & b"}
-	a := bandHTML(l, 2, 5, st, false)
+	render := func(n int, st scenario.Step, withExpect bool) string {
+		t.Helper()
+		s, err := bandHTML(l, n, 5, st, withExpect)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return s
+	}
+	a := render(2, st, false)
 	for _, want := range []string{"Étape 2/5 · vérifie E3", "Click &lt;b&gt;"} {
 		if !strings.Contains(a, want) {
 			t.Errorf("state A lacks %q", want)
@@ -105,10 +113,10 @@ func TestBandHTML(t *testing.T) {
 	if strings.Contains(a, "Tu dois voir") {
 		t.Error("state A must not show the expectation")
 	}
-	if b := bandHTML(l, 2, 5, st, true); !strings.Contains(b, "Tu dois voir :</b> a &amp; b") {
+	if b := render(2, st, true); !strings.Contains(b, "Tu dois voir :</b> a &amp; b") {
 		t.Errorf("state B lacks the expectation: %s", b)
 	}
-	if strings.Contains(bandHTML(l, 1, 5, scenario.Step{Caption: "c"}, false), "vérifie") {
+	if strings.Contains(render(1, scenario.Step{Caption: "c"}, false), "vérifie") {
 		t.Error("no check, no check label")
 	}
 }

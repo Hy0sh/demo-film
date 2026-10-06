@@ -1,0 +1,13 @@
+<!doctype html>
+<meta charset="utf-8">
+<!-- One state of the caption band under the page: the step and its
+     caption (state A), plus what the viewer should see (state B). -->
+<body style="margin: 0; height: {{.Height}}px; box-sizing: border-box; padding: 12px 28px; overflow: hidden;
+             background: {{.Background}}; border-top: 4px solid {{.Accent}};
+             color: #fff; font: 19px/1.4 system-ui, sans-serif">
+  <div style="font-weight: 700; color: {{.Header}}">{{.Step}} {{.N}}/{{.Total}}{{if .Check}} · {{.CheckLabel}} {{.Check}}{{end}}</div>
+  <div>{{.Caption}}</div>
+  {{- if .Expect}}
+  <div style="margin-top: 2px"><b>{{.See}}</b> {{.Expect}}</div>
+  {{- end}}
+</body>

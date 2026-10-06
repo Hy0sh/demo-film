@@ -1,8 +1,9 @@
 package film
 
 import (
-	"fmt"
-	"html"
+	_ "embed"
+	"html/template"
+	"strings"
 
 	"github.com/Hy0sh/demo-film/internal/scenario"
 )
@@ -16,17 +17,27 @@ const (
 	bandHeader     = "#7fa8e8"
 )
 
+//go:embed band.html
+var bandSource string
+
+var bandTemplate = template.Must(template.New("band").Parse(bandSource))
+
 // bandHTML is one state of the band: the caption alone (state A), or the
 // caption plus "you should see" (state B).
-func bandHTML(l scenario.Labels, n, total int, st scenario.Step, withExpect bool) string {
-	head := fmt.Sprintf("%s %d/%d", html.EscapeString(l.Step), n, total)
-	if st.Check != "" {
-		head += fmt.Sprintf(" · %s %s", html.EscapeString(l.Check), html.EscapeString(st.Check))
+func bandHTML(l scenario.Labels, n, total int, st scenario.Step, withExpect bool) (string, error) {
+	data := struct {
+		Step, CheckLabel, See, Check, Caption, Expect string
+		N, Total, Height                              int
+		Background, Accent, Header                    string
+	}{
+		Step: l.Step, CheckLabel: l.Check, See: l.See, Check: st.Check, Caption: st.Caption,
+		N: n, Total: total, Height: BandHeight,
+		Background: bandBackground, Accent: bandAccent, Header: bandHeader,
 	}
-	body := fmt.Sprintf(`<div style="font-weight:700;color:%s">%s</div><div>%s</div>`, bandHeader, head, html.EscapeString(st.Caption))
 	if withExpect {
-		body += fmt.Sprintf(`<div style="margin-top:2px"><b>%s</b> %s</div>`, html.EscapeString(l.See), html.EscapeString(st.Expect))
+		data.Expect = st.Expect
 	}
-	return fmt.Sprintf(`<!doctype html><meta charset="utf-8"><body style="margin:0;background:%s;color:#fff;font:19px/1.4 system-ui,sans-serif;height:%dpx;box-sizing:border-box;padding:12px 28px;border-top:4px solid %s;overflow:hidden">%s</body>`,
-		bandBackground, BandHeight, bandAccent, body)
+	var b strings.Builder
+	err := bandTemplate.Execute(&b, data)
+	return b.String(), err
 }

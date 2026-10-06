@@ -90,7 +90,11 @@ func Film(s *scenario.Scenario, outDir string) error {
 	var windows []Window
 	for k, from := range starts {
 		st := s.Steps[k/2]
-		if err := band.SetContent(bandHTML(s.Labels, k/2+1, len(s.Steps), st, k%2 == 1)); err != nil {
+		content, err := bandHTML(s.Labels, k/2+1, len(s.Steps), st, k%2 == 1)
+		if err != nil {
+			return err
+		}
+		if err := band.SetContent(content); err != nil {
 			return err
 		}
 		png := filepath.Join(tmp, fmt.Sprintf("caption-%d.png", k))
