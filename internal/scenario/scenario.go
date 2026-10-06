@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -49,7 +50,7 @@ type Watermark struct {
 // Terminal is the shell a terminal demo films, served in the browser by ttyd.
 type Terminal struct {
 	Shell string `yaml:"shell"` // command line; default: $SHELL
-	Cwd   string `yaml:"cwd"`   // default: the current directory; ~ is expanded
+	Cwd   string `yaml:"cwd"`   // relative to the scenario file, ~ expanded; default: the current directory
 }
 
 type Viewport struct {
@@ -126,8 +127,12 @@ func Load(path string) (*Scenario, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
+	// Paths in a scenario are relative to its file, not to where it is run.
 	if w := s.Watermark; w != nil && w.Image != "" && !filepath.IsAbs(w.Image) {
 		w.Image = filepath.Join(filepath.Dir(path), w.Image)
+	}
+	if t := s.Terminal; t != nil && t.Cwd != "" && !filepath.IsAbs(t.Cwd) && !strings.HasPrefix(t.Cwd, "~") {
+		t.Cwd = filepath.Join(filepath.Dir(path), t.Cwd)
 	}
 	if errs := Validate(s); len(errs) > 0 {
 		return nil, ValidationError{Path: path, Errs: errs}

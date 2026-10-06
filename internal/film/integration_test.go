@@ -45,6 +45,7 @@ steps:
       - fill: {field: password, value: secret}
       - fill: {field: 1, value: Ada Lovelace}
       - fill: {field: Start, value: "2026-10-06"}
+      - fill: {field: Tint, value: "#AABBCC"}
     see: ["Submitted: lamp", "Picked 2026-10-06"]
     expect: the search was submitted
   - caption: Use the table

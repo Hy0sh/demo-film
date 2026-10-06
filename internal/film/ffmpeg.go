@@ -2,7 +2,9 @@ package film
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -73,6 +75,20 @@ func encodeArgs(speed float64, out string) []string {
 func ffmpeg(args ...string) error {
 	if msg, err := exec.Command("ffmpeg", append([]string{"-y", "-loglevel", "error"}, args...)...).CombinedOutput(); err != nil {
 		return fmt.Errorf("ffmpeg: %w\n%s", err, msg)
+	}
+	return nil
+}
+
+// publish moves demo.mp4, written in tmp, and chapters.md into outDir, only
+// once both are complete: a run that fails leaves no half-written video.
+func publish(tmp, outDir, chapters string) error {
+	if err := os.WriteFile(filepath.Join(tmp, "chapters.md"), []byte(chapters), 0o644); err != nil {
+		return err
+	}
+	for _, f := range []string{"demo.mp4", "chapters.md"} {
+		if err := os.Rename(filepath.Join(tmp, f), filepath.Join(outDir, f)); err != nil {
+			return err
+		}
 	}
 	return nil
 }

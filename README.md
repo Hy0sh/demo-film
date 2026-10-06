@@ -62,7 +62,8 @@ demo-film join parts/1 parts/2 -o final
 `join` puts a title card with the scenario's `title` before each part
 (1.5 s divided by `speed`, at least 1.2 s; `--no-cards` drops them), and
 writes a `chapters.md` with one section per part, its times shifted by
-what comes before it. Parts that differ in frame size, codec or `speed` are
+what comes before it (to the second, as `chapters.md` gives them: a joined
+time may be up to a second early). Parts that differ in frame size, codec or `speed` are
 refused, naming the part at fault. It re-encodes the whole film. Steps keep
 their per-part numbering.
 
@@ -99,9 +100,13 @@ Unknown keys are errors. `examples/shop.yaml` is a complete scenario.
 ### Terminal
 
 `terminal` films a shell instead of a web app. demo-film serves it in the
-browser with ttyd, on the loopback only, and opens it off camera before step
-1, once the shell has printed its prompt. `shell` is the command line
-(default: `$SHELL`), `cwd` its directory (default: the current one). The
+browser with ttyd and opens it off camera before step 1, once the shell has
+printed its prompt; no `open` is allowed, it would restart the shell. The
+shell is writable, so ttyd listens on the loopback only, checks the
+WebSocket's origin and asks for a password made for the run: no other
+process or user of the machine gets it. `shell` is the command line,
+quotes allowed (default: `$SHELL`); `cwd` its directory, relative to the
+scenario file, `~` expanded (default: the current one). The
 text is rendered in the page, so `wait` and `see` read the terminal like any
 screen. Type commands with `type`, run them with `press: Enter`, and cut
 the long ones with a `wait` marked `cut` (see below). The typed command
