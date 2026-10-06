@@ -47,17 +47,32 @@ func (r *runner) cutTotal() time.Duration {
 // cardTime is how long the transition card shows on each side of a cut.
 const cardTime = 1200 * time.Millisecond
 
+// minCut is the shortest wait worth a cut: below it, "⏩ 0:00 later" would
+// announce a jump the viewer cannot notice.
+const minCut = time.Second
+
 // cutWait plays a wait marked cut: a transition card covers the page with a
 // spinner, the wait happens under it and is cut out, then the card names the
 // time skipped ("⏩ 2:14 later") and fades onto the result. The viewer sees
 // that the film jumped: a cut never passes for an instant task.
-func (r *runner) cutWait(find func() error) error {
+//
+// A wait with nothing to wait for shows no card: when the condition already
+// holds (a script off camera finished first), the film goes on; when it
+// comes true under minCut, the card leaves without a cut nor a "0:00 later".
+func (r *runner) cutWait(timeout time.Duration, find func(time.Duration) error) error {
+	if find(0) == nil {
+		return nil
+	}
 	if _, err := r.page.Evaluate(cardJS, ""); err != nil {
 		return err
 	}
 	r.pause(r.gesture(cardTime))
 	from := time.Now()
-	if err := find(); err != nil {
+	if err := find(timeout); err != nil {
+		return err
+	}
+	if time.Since(from) < minCut {
+		_, err := r.page.Evaluate(cardJS, nil)
 		return err
 	}
 	r.cuts = append(r.cuts, span{from, time.Now()})
@@ -333,20 +348,20 @@ func (r *runner) do(a scenario.Action) error {
 		return r.travel(loc)
 
 	case scenario.Wait:
-		find := func() error {
+		find := func(timeout time.Duration) error {
 			switch a.Until {
 			case scenario.Gone:
-				return r.gone(to, a.Text, r.byText(root, a.Text)...)
+				return r.gone(timeout, a.Text, r.byText(root, a.Text)...)
 			case scenario.Enabled:
-				return r.enabled(to, a.Text, append(r.byName(root, "button", a.Text), r.byText(root, a.Text)...)...)
+				return r.enabled(timeout, a.Text, append(r.byName(root, "button", a.Text), r.byText(root, a.Text)...)...)
 			}
-			_, err := r.find(to, fmt.Sprintf("%q", a.Text), r.byText(root, a.Text)...)
+			_, err := r.find(timeout, fmt.Sprintf("%q", a.Text), r.byText(root, a.Text)...)
 			return err
 		}
 		if !a.Cut || !r.paced {
-			return find()
+			return find(to)
 		}
-		return r.cutWait(find)
+		return r.cutWait(to, find)
 
 	case scenario.Popup:
 		return r.popup(root, a)

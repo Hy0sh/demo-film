@@ -81,7 +81,7 @@ locale: fr                            # optional, see below
 hide: ["css selector", ...]           # optional, see below
 timeout: 15                           # optional, seconds per action
 speed: 1                              # optional, 0.25 to 4: whole video (0.5 = twice as slow)
-labels:                               # optional, English defaults shown
+labels:                               # optional, the locale's words by default (English shown)
   step: Step                          #   "Step 2/5"
   check: check                        #   "Step 2/5 · check E3"
   see: "You should see:"
@@ -134,10 +134,13 @@ steps:
 - `locale` sets `localStorage.i18nextLng` before any page script runs, and
   the browser's own language: `Intl`, `Accept-Language` and the native date
   and month inputs follow it (`fr` shows 06/10/2026 and "octobre 2026").
+  It also sets the words of the caption band and the cards: `fr` gives
+  "Étape", "vérifie", "À l'écran :" and "plus tard"; a language without
+  words of its own gets English.
 - `hide` injects `display: none !important` for those selectors during
   filming (dev toolbars, debug overlays).
-- `labels` lets a demo speak another language without hardcoding it, e.g.
-  `{step: "Étape", check: "vérifie", see: "Tu dois voir :"}`.
+- `labels` overrides the locale's words one by one, e.g.
+  `{see: "Tu dois voir :"}`, or gives a language demo-film has no words for.
 - `watermark` lays an image, or a line of white shadowed text, 24 px from a
   corner of the page area for the whole video; it never covers the caption
   band. The image is used at its own size. `join` leaves its title cards
@@ -183,7 +186,9 @@ the wait from the video: a transition card with a spinner covers the page
 for 1.2 s, the wait is cut out under it, then the card reads "⏩ 2:14 later"
 for 1.2 s and fades onto the result, so a cut never passes for an instant
 task. Captions and chapters follow the
-cut video.
+cut video. A wait with nothing to wait for shows no card: when the
+condition already holds (a script off camera finished first) the film goes
+on, and when it comes true within a second the card leaves without a cut.
 
 ```yaml
 - click: Start export
