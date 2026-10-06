@@ -177,7 +177,7 @@ func validateAction(a Action) []string {
 		e = append(e, "timeout must be positive")
 	}
 	switch a.Kind {
-	case Open, Hover, Wait, Press, Type, Confirm:
+	case Open, Hover, Wait, Press, Type, Confirm: // a wait's {gone}/{enabled} text too
 		need(strings.TrimSpace(a.Text) != "", "the value is empty")
 	case Menu:
 		need(len(a.Menu) == 2 && a.Menu[0] != "" && a.Menu[1] != "", "menu needs exactly [Parent label, Child label]")

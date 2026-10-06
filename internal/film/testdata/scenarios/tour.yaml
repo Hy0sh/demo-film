@@ -72,6 +72,20 @@ steps:
       - click: Enregistrer le groupe
     see: [Group saved]
     expect: the group is saved
+  - caption: Load the list, then pay
+    do:
+      - click: Load the list
+      - wait: {enabled: Pay}
+      - click: Pay
+    see: [Paid]
+    expect: paid
+  - caption: Create a group, then log out once its toast is gone
+    do:
+      - click: Create a group
+      - wait: {gone: Group created.}
+      - click: Log out
+    see: [Logged out]
+    expect: logged out
   - caption: Check the mail
     do:
       - open: {{.Mail}}

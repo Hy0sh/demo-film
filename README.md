@@ -161,6 +161,8 @@ is visible, character by character.
 | `type: "ls -l"` | type the text, visibly, into whatever has the focus (a terminal) |
 | `hover: "Visible text"` | move the cursor onto the element |
 | `wait: "text"` | wait until the text is visible |
+| `wait: {gone: "Saved."}` | wait until nothing visible shows the text: a toast over a button, a spinner; it also proves an absence |
+| `wait: {enabled: "Next"}` | wait until the control (a button by name, else the element by text) is no longer disabled: a button greyed until a list loads |
 | `popup: {click: "Docs", url_contains: "/docs"}` | click a link that opens a new tab, assert the tab's URL contains the string, close the tab |
 | `confirm: "Discard"` | click a button in the most recently opened dialog |
 
