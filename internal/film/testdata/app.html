@@ -17,6 +17,17 @@
 <!-- French typography: a narrow no-break space before the colon. -->
 <input placeholder="ex&#8239;: Natation" oninput="show('Sport: ' + this.value)">
 <button onclick="show('Group saved')">Enregistrer&nbsp;le&nbsp;groupe</button>
+<p>
+  <button onclick="setTimeout(() => document.getElementById('pay').disabled = false, 1500)">Load the list</button>
+  <button id="pay" disabled onclick="show('Paid')">Pay</button>
+</p>
+<p>
+  <button onclick="toast()">Create a group</button>
+  <span style="position: relative; display: inline-block">
+    <button onclick="show('Logged out')">Log out</button>
+    <span id="toasts"></span>
+  </span>
+</p>
 <p id="picked"></p>
 <label>Locked <input type="date" oninput="this.value = ''"></label>
 <p>Month: <span id="month"></span></p>
@@ -43,6 +54,19 @@
 const show = t => { document.getElementById('state').textContent = t; };
 document.getElementById('month').textContent = new Date(2026, 9, 6).toLocaleDateString(undefined, { month: 'long' });
 const slowJob = 12000; // ms, a task long enough for a cut to matter
+// A toast over the Log out button, gone after 1.5 s; like real toast
+// libraries, it pauses while the mouse is over it.
+function toast() {
+  const t = document.createElement('span');
+  t.textContent = 'Group created.';
+  t.style.cssText = 'position: absolute; inset: -6px -40px; background: #333; color: #fff; padding: 4px';
+  let timer;
+  const arm = () => { timer = setTimeout(() => t.remove(), 1500); };
+  t.onmouseenter = () => clearTimeout(timer);
+  t.onmouseleave = arm;
+  document.getElementById('toasts').appendChild(t);
+  arm();
+}
 function openWizard() {
   const d = document.createElement('div'); d.setAttribute('role', 'dialog');
   d.innerHTML = '<h2>Wizard</h2><label>Colour <select><option>Red</option><option>Blue</option></select></label>' +

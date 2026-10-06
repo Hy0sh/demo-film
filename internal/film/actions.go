@@ -333,6 +333,12 @@ func (r *runner) do(a scenario.Action) error {
 
 	case scenario.Wait:
 		find := func() error {
+			switch a.Until {
+			case scenario.Gone:
+				return r.gone(to, a.Text, r.byText(root, a.Text)...)
+			case scenario.Enabled:
+				return r.enabled(to, a.Text, append(r.byName(root, "button", a.Text), r.byText(root, a.Text)...)...)
+			}
 			_, err := r.find(to, fmt.Sprintf("%q", a.Text), r.byText(root, a.Text)...)
 			return err
 		}
@@ -370,6 +376,40 @@ func (r *runner) clickTarget(root playwright.Locator, a scenario.Action) (playwr
 		return r.pick(to, a.Match, fmt.Sprintf("%s %q", a.Role, a.Name), r.byName(root, a.Role, a.Name)...)
 	}
 	return r.pick(to, a.Match, fmt.Sprintf("%q", a.Text), r.byText(root, a.Text)...)
+}
+
+// gone waits until no candidate shows a visible element any more: a toast
+// that covers a button, a spinner, or a text that must not be there.
+func (r *runner) gone(timeout time.Duration, text string, cands ...playwright.Locator) error {
+	deadline := time.Now().Add(timeout)
+	for {
+		if _, ok := r.firstVisible(0, cands...); !ok {
+			return nil
+		}
+		if !time.Now().Before(deadline) {
+			return fmt.Errorf("%q is still visible after %s", text, timeout)
+		}
+		time.Sleep(pollEvery)
+	}
+}
+
+// enabled waits until the first visible candidate, a button by name before
+// a text, is no longer disabled: a "Continue" greyed until a list loads.
+func (r *runner) enabled(timeout time.Duration, text string, cands ...playwright.Locator) error {
+	loc, err := r.find(timeout, fmt.Sprintf("%q", text), cands...)
+	if err != nil {
+		return err
+	}
+	deadline := time.Now().Add(timeout)
+	for {
+		if ok, err := loc.IsEnabled(); err == nil && ok {
+			return nil
+		}
+		if !time.Now().Before(deadline) {
+			return fmt.Errorf("%q is still disabled after %s", text, timeout)
+		}
+		time.Sleep(pollEvery)
+	}
 }
 
 // pick is find, or with nth, the nth visible match (from 0, negative from

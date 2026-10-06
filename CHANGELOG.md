@@ -6,6 +6,15 @@ bump carries new commands or new behaviour, a patch bump carries fixes.
 
 ## [Unreleased]
 
+### Added
+
+- `wait: {gone: "text"}` waits until nothing visible shows the text (a
+  toast over a button, a spinner) and proves an absence; `wait: {enabled:
+  "text"}` waits until a control is no longer disabled. Both take `within`,
+  `timeout` and `cut`. They replace the hovers scenarios used to buy time,
+  which showed as stray cursor moves in the video. A toast pauses while
+  hovered, and a rehearsal's cursor lands on it at once: wait for it to go.
+
 ### Fixed
 
 - A space in a scenario text now matches any white space on the page,

@@ -111,6 +111,46 @@ func TestRehearseNamesHowManyMatchWhenNthIsOutOfRange(t *testing.T) {
 	}
 }
 
+// Without the wait for the toast to go, the cursor lands on Log out under
+// the toast, which pauses while hovered and never leaves: the click times
+// out. This is why a rehearsal failed where the take, slowed by its
+// captions, passed.
+func TestAToastHoveredByTheCursorNeverLeaves(t *testing.T) {
+	requireTools(t)
+	app, mail := newApps(t)
+	s := scenarioFor(t, app.URL, mail.URL)
+	s.Timeout = 3
+	var st *scenario.Step
+	for i := range s.Steps {
+		if strings.HasPrefix(s.Steps[i].Caption, "Create a group") {
+			st = &s.Steps[i]
+		}
+	}
+	st.Do = []scenario.Action{st.Do[0], st.Do[2]} // no wait: {gone}
+	s.Steps = append(s.Steps[:1], *st)
+	err := film.Rehearse(s, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), `click "Log out"`) {
+		t.Fatalf("want the click under the toast to fail, got %v", err)
+	}
+}
+
+func TestWaitConditionsTimeOut(t *testing.T) {
+	requireTools(t)
+	app, mail := newApps(t)
+	s := scenarioFor(t, app.URL, mail.URL)
+	s.Timeout = 1
+	s.Steps[0].Do = append(s.Steps[0].Do, scenario.Action{Kind: scenario.Wait, Until: scenario.Gone, Text: "Home"})
+	if err := film.Rehearse(s, t.TempDir()); err == nil || !strings.Contains(err.Error(), `"Home" is still visible after 1s`) {
+		t.Errorf("want gone to time out, got %v", err)
+	}
+	s = scenarioFor(t, app.URL, mail.URL)
+	s.Timeout = 1
+	s.Steps[0].Do = append(s.Steps[0].Do, scenario.Action{Kind: scenario.Wait, Until: scenario.Enabled, Text: "Pay"})
+	if err := film.Rehearse(s, t.TempDir()); err == nil || !strings.Contains(err.Error(), `"Pay" is still disabled after 1s`) {
+		t.Errorf("want enabled to time out, got %v", err)
+	}
+}
+
 func TestRehearseFailsAtTheRightStep(t *testing.T) {
 	requireTools(t)
 	app, mail := newApps(t)

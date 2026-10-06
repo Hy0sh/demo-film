@@ -24,6 +24,12 @@ const (
 	Confirm = "confirm"
 )
 
+// What a wait waits for, besides a text showing up.
+const (
+	Gone    = "gone"    // no visible element shows the text any more
+	Enabled = "enabled" // the control showing the text is no longer disabled
+)
+
 // Action is one item of a step's `do`: a single-key map, plus the optional
 // `within`, `cut` and `timeout` modifiers. Only the fields of its Kind are set.
 type Action struct {
@@ -31,6 +37,7 @@ type Action struct {
 	Within  string // "" or "dialog"
 	Cut     bool   // wait: the video skips from the start of the wait to the text
 	Timeout int    // wait: seconds, overrides the scenario's timeout
+	Until   string // wait: "" for the text to show up, Gone or Enabled
 
 	Text string   // open (url or path), click/hover/wait text, press key, confirm button
 	Menu []string // menu: parent, child
@@ -123,7 +130,9 @@ func (a *Action) UnmarshalYAML(n *yaml.Node) error {
 	}
 	a.Kind = key.Value
 	switch a.Kind {
-	case Open, Hover, Wait, Press, Type, Confirm:
+	case Wait:
+		return a.decodeWait(val)
+	case Open, Hover, Press, Type, Confirm:
 		return val.Decode(&a.Text)
 	case Menu:
 		if err := val.Decode(&a.Menu); err != nil {
@@ -160,6 +169,30 @@ func (a *Action) UnmarshalYAML(n *yaml.Node) error {
 		a.Link, a.URLContains = f.Click, f.URLContains
 	default:
 		return fmt.Errorf("line %d: unknown action %q (open, menu, click, fill, select, press, type, hover, wait, popup, confirm)", key.Line, a.Kind)
+	}
+	return nil
+}
+
+// decodeWait reads the shapes of wait: a text to show up, {gone: text} for
+// a text to disappear, {enabled: text} for a control to become usable.
+func (a *Action) decodeWait(n *yaml.Node) error {
+	if n.Kind == yaml.ScalarNode {
+		return n.Decode(&a.Text)
+	}
+	var w struct {
+		Gone    string `yaml:"gone"`
+		Enabled string `yaml:"enabled"`
+	}
+	if err := decodeStrict(n, &w); err != nil {
+		return err
+	}
+	switch {
+	case w.Gone != "" && w.Enabled == "":
+		a.Until, a.Text = Gone, w.Gone
+	case w.Enabled != "" && w.Gone == "":
+		a.Until, a.Text = Enabled, w.Enabled
+	default:
+		return fmt.Errorf("line %d: wait is a text, {gone: text} or {enabled: text}", n.Line)
 	}
 	return nil
 }
@@ -229,6 +262,11 @@ func (a Action) String() string {
 		s = fmt.Sprintf("select %q in %s", a.Option, a.Field)
 	case Popup:
 		s = fmt.Sprintf("popup via %q expecting a URL containing %q", a.Link, a.URLContains)
+	case Wait:
+		s = fmt.Sprintf("wait %q", a.Text)
+		if a.Until != "" {
+			s = fmt.Sprintf("wait until %q is %s", a.Text, a.Until)
+		}
 	default:
 		s = fmt.Sprintf("%s %q", a.Kind, a.Text)
 	}

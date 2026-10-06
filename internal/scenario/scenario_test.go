@@ -62,6 +62,8 @@ func TestRules(t *testing.T) {
 		{"negative wait timeout", "      - wait: Home", "      - wait: Home\n        timeout: -1", "timeout must be positive"},
 		{"popup without url", "{click: Docs, url_contains: /docs}", "{click: Docs}", "popup needs"},
 		{"menu with one label", "[Settings, Profile]", "[Settings]", "menu needs exactly"},
+		{"wait on two conditions", "      - wait: Home", "      - wait: {gone: Toast, enabled: Next}", "wait is a text, {gone: text} or {enabled: text}"},
+		{"wait on an unknown condition", "      - wait: Home", "      - wait: {hidden: Toast}", "field hidden not found"},
 		{"open in a terminal demo", "base_url: http://localhost:3000", "terminal: {shell: sh}", "open would restart it"},
 		{"nth on a row click", "{row: Ada, button: Edit}", "{row: Ada, button: Edit, nth: 1}", "nth goes with text or {role, name}"},
 		{"text and role together", "{role: button, name: Edit}", "{role: button, name: Edit, text: Edit}", "click is a text"},
@@ -91,6 +93,24 @@ func TestCutWait(t *testing.T) {
 	}
 	if w := s.Steps[0].Do[1]; !w.Cut || w.Timeout != 600 || w.Text != "Home" {
 		t.Errorf("cut wait decoded as %+v", w)
+	}
+}
+
+func TestWaitConditions(t *testing.T) {
+	y := strings.Replace(valid, "      - wait: Home", "      - wait: {gone: Saving…}\n        within: dialog\n        cut: true\n        timeout: 60\n      - wait: {enabled: Next}\n      - wait: Home", 1)
+	s, err := Parse([]byte(y))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if errs := Validate(s); len(errs) > 0 {
+		t.Fatalf("waits on conditions must pass: %v", errs)
+	}
+	do := s.Steps[0].Do
+	if g, e := do[1], do[2]; g.Until != Gone || g.Text != "Saving…" || !g.Cut || g.Within != "dialog" || e.Until != Enabled || e.Text != "Next" {
+		t.Errorf("decoded as %+v and %+v", g, e)
+	}
+	if got := do[1].String(); got != `wait until "Saving…" is gone within dialog (cut)` {
+		t.Errorf("String() = %s", got)
 	}
 }
 
