@@ -190,8 +190,9 @@ func validateAction(a Action) []string {
 		if a.Row != "" || a.Button != "" || a.Nth != nil {
 			shapes++
 			need(a.Row != "" && (a.Button != "") != (a.Nth != nil), "click in a row needs row and exactly one of button (name) or button: {nth: N}")
+			need(a.Match == nil, "nth goes with text or {role, name}; in a row, use button: {nth: N}")
 		}
-		need(shapes == 1, "click is a text, {role, name} or {row, button}")
+		need(shapes == 1, "click is a text, {text, nth}, {role, name[, nth]} or {row, button}")
 	case Fill:
 		need(a.Field.Label != "" || a.Field.Rank > 0, "fill needs a field")
 	case Select:

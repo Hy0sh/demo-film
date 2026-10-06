@@ -85,6 +85,8 @@ func TestRules(t *testing.T) {
 		{"negative wait timeout", "      - wait: Home", "      - wait: Home\n        timeout: -1", "timeout must be positive"},
 		{"popup without url", "{click: Docs, url_contains: /docs}", "{click: Docs}", "popup needs"},
 		{"menu with one label", "[Settings, Profile]", "[Settings]", "menu needs exactly"},
+		{"nth on a row click", "{row: Ada, button: Edit}", "{row: Ada, button: Edit, nth: 1}", "nth goes with text or {role, name}"},
+		{"text and role together", "{role: button, name: Edit}", "{role: button, name: Edit, text: Edit}", "click is a text"},
 		{"last click is a forward button", "      - confirm: Discard", "      - click: Suivant", "forward button"},
 		{"last role click is a forward button", "      - confirm: Discard", "      - click: {role: button, name: Next}", "forward button"},
 	}
@@ -111,6 +113,27 @@ func TestCutWait(t *testing.T) {
 	}
 	if w := s.Steps[0].Do[1]; !w.Cut || w.Timeout != 600 || w.Text != "Home" {
 		t.Errorf("cut wait decoded as %+v", w)
+	}
+}
+
+func TestClickNth(t *testing.T) {
+	y := strings.Replace(valid, "      - hover: Help", "      - click: {text: Slot, nth: 1}\n      - click: {role: button, name: Actions, nth: -1}\n      - hover: Help", 1)
+	s, err := Parse([]byte(y))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if errs := Validate(s); len(errs) > 0 {
+		t.Fatalf("click with nth must pass: %v", errs)
+	}
+	var got []string
+	for _, a := range s.Steps[1].Do {
+		if a.Match != nil {
+			got = append(got, a.String())
+		}
+	}
+	want := []string{`click "Slot" (match #1)`, `click button "Actions" (match #-1)`}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Errorf("got %q, want %q", got, want)
 	}
 }
 
