@@ -173,6 +173,9 @@ func (r *runner) clickOn(loc playwright.Locator) error {
 	return loc.Click()
 }
 
+// nativePicker are the input types whose value is picked, not typed.
+var nativePicker = map[string]bool{"date": true, "month": true, "week": true, "time": true, "datetime-local": true, "color": true, "range": true}
+
 // controls are the form controls a numeric rank counts among.
 const controls = "input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button]),textarea"
 
@@ -229,6 +232,20 @@ func (r *runner) do(a scenario.Action) error {
 		}
 		if err := r.clickOn(loc); err != nil {
 			return err
+		}
+		// A native picker (date, month, time...) takes no typed characters:
+		// its value is set at once, as rehearse does for every field.
+		kind, _ := loc.GetAttribute("type")
+		if nativePicker[kind] {
+			// An app may reject the value it is given (a controlled input):
+			// a picker that kept something else is a failure, not a green.
+			if err := loc.Fill(a.Value); err != nil {
+				return err
+			}
+			if got, err := loc.InputValue(); err != nil || got != a.Value {
+				return fmt.Errorf("the %s field holds %q, not %q (a %s input takes an ISO value such as 2026-10-06 or 2026-10-06T08:00)", kind, got, a.Value, kind)
+			}
+			return nil
 		}
 		if !r.filming {
 			return loc.Fill(a.Value)

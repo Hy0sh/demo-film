@@ -6,6 +6,14 @@ bump carries new commands or new behaviour, a patch bump carries fixes.
 
 ## [Unreleased]
 
+### Fixed
+
+- `fill` on a native date, month, week, time, datetime-local, colour or
+  range input failed when filming while the rehearsal passed: such a field
+  takes no typed characters, its value is now set at once. The step now
+  fails when such a field does not hold the value given (an app rejecting
+  it), instead of passing.
+
 ## [0.3.0] - 2026-10-06
 
 ### Changed

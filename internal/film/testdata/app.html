@@ -12,6 +12,9 @@
 <label>Name <input id="name"></label>
 <input placeholder="Search" onkeydown="if(event.key==='Enter')show('Submitted: '+this.value)">
 <label>Secret <input type="password"></label>
+<label>Start <input type="date" onchange="document.getElementById('picked').textContent='Picked '+this.value"></label>
+<p id="picked"></p>
+<label>Locked <input type="date" oninput="this.value = ''"></label>
 <table>
   <tr><td>Ada</td><td><button onclick="show('Editing Ada')">&#9998;</button><button onclick="show('Removed Ada')">&#128465;</button></td></tr>
   <tr><td>Grace</td><td><button aria-label="Edit" onclick="show('Editing Grace')">&#9998;</button></td></tr>
