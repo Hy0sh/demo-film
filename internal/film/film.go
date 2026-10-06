@@ -137,5 +137,9 @@ func Film(s *scenario.Scenario, outDir string) error {
 	if err := assemble(raw, offset, pngs, filter, filepath.Join(tmp, "demo.mp4"), last, s.Speed); err != nil {
 		return err
 	}
-	return publish(tmp, outDir, Chapters(s.Title, chapters))
+	md, err := Chapters(s.Title, chapters)
+	if err != nil {
+		return err
+	}
+	return publish(tmp, outDir, md)
 }

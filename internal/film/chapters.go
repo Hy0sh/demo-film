@@ -1,8 +1,9 @@
 package film
 
 import (
-	"fmt"
+	_ "embed"
 	"strings"
+	"text/template"
 	"time"
 )
 
@@ -16,12 +17,26 @@ type Chapter struct {
 
 var cell = strings.NewReplacer("|", `\|`, "\n", " ")
 
-// Chapters renders chapters.md: one row per step.
-func Chapters(title string, rows []Chapter) string {
+//go:embed chapters.tmpl
+var chaptersSource string
+
+var chaptersTemplate = template.Must(template.New("chapters").
+	Funcs(template.FuncMap{"cell": cell.Replace, "clock": Clock}).
+	Parse(chaptersSource))
+
+// section is one titled table of chapters.md.
+type section struct {
+	Heading, Title string // Heading: "#" for a film, "##" for a part of a joined one
+	Rows           []Chapter
+}
+
+func renderChapters(sections []section) (string, error) {
 	var b strings.Builder
-	fmt.Fprintf(&b, "# %s\n\n| Step | Check | Time | Caption | Expect |\n|---|---|---|---|---|\n", title)
-	for _, c := range rows {
-		fmt.Fprintf(&b, "| %d | %s | %s | %s | %s |\n", c.N, cell.Replace(c.Check), Clock(c.At), cell.Replace(c.Caption), cell.Replace(c.Expect))
-	}
-	return b.String()
+	err := chaptersTemplate.Execute(&b, sections)
+	return b.String(), err
+}
+
+// Chapters renders chapters.md: one row per step.
+func Chapters(title string, rows []Chapter) (string, error) {
+	return renderChapters([]section{{Heading: "#", Title: title, Rows: rows}})
 }

@@ -1,0 +1,10 @@
+{{- /* chapters.md: a section per film (one for film, one per part for
+join), a row per step. cell keeps a pipe from ending the cell and a newline
+from ending the row. */ -}}
+{{range $i, $s := .}}{{if $i}}
+{{end}}{{$s.Heading}} {{$s.Title}}
+
+| Step | Check | Time | Caption | Expect |
+|---|---|---|---|---|
+{{range $s.Rows}}| {{.N}} | {{cell .Check}} | {{clock .At}} | {{cell .Caption}} | {{cell .Expect}} |
+{{end}}{{end -}}
