@@ -1,0 +1,11 @@
+# A cut wait on a text already on screen, at {{.App}}: nothing to cut.
+title: Already there
+base_url: {{.App}}
+steps:
+  - caption: Open the shop
+    do:
+      - open: /
+      - wait: Home
+        cut: true
+    see: [Home]
+    expect: the home page

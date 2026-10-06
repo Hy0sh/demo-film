@@ -186,7 +186,9 @@ the wait from the video: a transition card with a spinner covers the page
 for 1.2 s, the wait is cut out under it, then the card reads "⏩ 2:14 later"
 for 1.2 s and fades onto the result, so a cut never passes for an instant
 task. Captions and chapters follow the
-cut video.
+cut video. A wait with nothing to wait for shows no card: when the
+condition already holds (a script off camera finished first) the film goes
+on, and when it comes true within a second the card leaves without a cut.
 
 ```yaml
 - click: Start export

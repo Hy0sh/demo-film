@@ -13,6 +13,9 @@ bump carries new commands or new behaviour, a patch bump carries fixes.
   only overrides them. A French film whose labels left out `later` showed
   "⏩ 1:23 later" in English. A language without words of its own still
   gets English.
+- A `cut` wait whose condition already holds shows no card any more, and
+  one met within a second leaves its card without a cut: a script finished
+  off camera produced a "⏩ 0:00 later" card.
 
 ## [0.5.0] - 2026-10-07
 

@@ -66,6 +66,43 @@ func blankFirstFrame(t *testing.T, mp4 string, w, h int) bool {
 	return true
 }
 
+// darkFrames counts the frames, four per second, whose page area is nearly
+// all dark: the transition card of a cut, over a test app that is white.
+func darkFrames(t *testing.T, mp4 string, w, h int) int {
+	t.Helper()
+	dir := t.TempDir()
+	vf := fmt.Sprintf("fps=4,crop=%d:%d:0:0,scale=160:-1", w, h)
+	if out, err := exec.Command("ffmpeg", "-v", "error", "-i", mp4, "-vf", vf, filepath.Join(dir, "f%04d.png")).CombinedOutput(); err != nil {
+		t.Fatalf("ffmpeg: %v\n%s", err, out)
+	}
+	frames, _ := filepath.Glob(filepath.Join(dir, "*.png"))
+	n := 0
+	for _, png := range frames {
+		f, err := os.Open(png)
+		if err != nil {
+			t.Fatal(err)
+		}
+		img, err := pngdec.Decode(f)
+		f.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+		b := img.Bounds()
+		dark := 0
+		for y := b.Min.Y; y < b.Max.Y; y++ {
+			for x := b.Min.X; x < b.Max.X; x++ {
+				if r, g, bl, _ := img.At(x, y).RGBA(); r>>8 < 60 && g>>8 < 60 && bl>>8 < 60 {
+					dark++
+				}
+			}
+		}
+		if dark*10 > b.Dx()*b.Dy()*9 {
+			n++
+		}
+	}
+	return n
+}
+
 func TestFilmWritesVideoAndChapters(t *testing.T) {
 	requireTools(t)
 	app, mail := newApps(t)
@@ -131,10 +168,27 @@ func TestFilmCutsALongWait(t *testing.T) {
 		floor += (film.ReadTime(st.Caption, s.Speed) + film.HoldTime(st.Expect, s.Speed)).Seconds()
 	}
 	floor += 2 * film.ActionPace(s.Speed).Seconds()
+	// The card shows for a real cut: the check below must see it.
+	if darkFrames(t, filepath.Join(dir, "demo.mp4"), s.Viewport.Width, s.Viewport.Height) == 0 {
+		t.Error("no frame shows the transition card")
+	}
 	// The 12 s export is gone; the card and gestures stay well under it.
 	dur := videoDuration(t, dir)
 	if dur < floor || dur > floor+6 {
 		t.Errorf("duration %.1fs, want between %.1fs and %.1fs: the wait was not cut", dur, floor, floor+6)
+	}
+}
+
+func TestFilmShowsNoCardWhenNothingIsAwaited(t *testing.T) {
+	requireTools(t)
+	app, _ := newApps(t)
+	s := loadScenario(t, "already", map[string]string{"App": app.URL})
+	dir := t.TempDir()
+	if err := film.Film(s, dir); err != nil {
+		t.Fatal(err)
+	}
+	if n := darkFrames(t, filepath.Join(dir, "demo.mp4"), s.Viewport.Width, s.Viewport.Height); n > 0 {
+		t.Errorf("%d frames show the transition card, for a wait already met", n)
 	}
 }
 
