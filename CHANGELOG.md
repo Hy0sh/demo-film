@@ -6,6 +6,14 @@ bump carries new commands or new behaviour, a patch bump carries fixes.
 
 ## [Unreleased]
 
+### Fixed
+
+- A space in a scenario text now matches any white space on the page,
+  no-break spaces included: a French placeholder "ex : Natation", written
+  with U+202F, was not found from a scenario typed with a plain space,
+  though the list of visible names showed it. Applies to texts, roles and
+  names, labels, placeholders, menu entries, table rows and select options.
+
 ## [0.4.0] - 2026-10-06
 
 ### Added
