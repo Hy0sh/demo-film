@@ -214,6 +214,9 @@ func (r *runner) clickOn(loc playwright.Locator) error {
 	return loc.Click()
 }
 
+//go:embed picker_value.js
+var pickerValueJS string
+
 // nativePicker are the input types whose value is picked, not typed.
 var nativePicker = map[string]bool{"date": true, "month": true, "week": true, "time": true, "datetime-local": true, "color": true, "range": true}
 
@@ -290,8 +293,14 @@ func (r *runner) do(a scenario.Action) error {
 			if err := loc.Fill(a.Value); err != nil {
 				return err
 			}
-			if got, err := loc.InputValue(); err != nil || got != a.Value {
-				return fmt.Errorf("the %s field holds %q, not %q (a %s input takes an ISO value such as 2026-10-06 or 2026-10-06T08:00)", kind, got, a.Value, kind)
+			// Compared with what the browser makes of the value given, so
+			// "#AABBCC" or "08:00:00" pass as the "#aabbcc" or "08:00" kept.
+			want, err := r.page.Evaluate(pickerValueJS, []string{kind, a.Value})
+			if err != nil {
+				return err
+			}
+			if got, err := loc.InputValue(); err != nil || got != want {
+				return fmt.Errorf("the %s field holds %q, not %q (the app refused it, or the value is not in the input's format: 2026-10-06, 2026-10, 08:00, 2026-10-06T08:00, #aabbcc)", kind, got, a.Value)
 			}
 			return nil
 		}

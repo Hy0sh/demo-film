@@ -23,6 +23,20 @@ func ffprobe(t *testing.T, file, entries string) string {
 	return strings.TrimSpace(string(out))
 }
 
+// videoDuration is the length of a film's demo.mp4, in seconds.
+func videoDuration(t *testing.T, dir string) float64 {
+	t.Helper()
+	out, err := exec.Command("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", filepath.Join(dir, "demo.mp4")).Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, err := strconv.ParseFloat(strings.TrimSpace(string(out)), 64)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return d
+}
+
 // blankFirstFrame reports whether the page area of the first frame is a
 // single colour.
 func blankFirstFrame(t *testing.T, mp4 string, w, h int) bool {
@@ -78,11 +92,7 @@ func TestFilmWritesVideoAndChapters(t *testing.T) {
 		floor += (film.ReadTime(st.Caption, s.Speed) + film.HoldTime(st.Expect, s.Speed)).Seconds()
 		gestures += float64(len(st.Do)) * film.ActionPace(s.Speed).Seconds()
 	}
-	out, err := exec.Command("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", mp4).Output()
-	if err != nil {
-		t.Fatal(err)
-	}
-	dur, _ := strconv.ParseFloat(strings.TrimSpace(string(out)), 64)
+	dur := videoDuration(t, dir)
 	if ceil := floor + gestures + 30; dur < floor || dur > ceil {
 		t.Errorf("duration %.1fs, want between %.1fs and %.1fs", dur, floor, ceil)
 	}
@@ -142,12 +152,8 @@ steps:
 		floor += (film.ReadTime(st.Caption, s.Speed) + film.HoldTime(st.Expect, s.Speed)).Seconds()
 	}
 	floor += 2 * film.ActionPace(s.Speed).Seconds()
-	out, err := exec.Command("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", filepath.Join(dir, "demo.mp4")).Output()
-	if err != nil {
-		t.Fatal(err)
-	}
-	// The 12 s export is gone; the badge and gestures stay well under it.
-	dur, _ := strconv.ParseFloat(strings.TrimSpace(string(out)), 64)
+	// The 12 s export is gone; the card and gestures stay well under it.
+	dur := videoDuration(t, dir)
 	if dur < floor || dur > floor+6 {
 		t.Errorf("duration %.1fs, want between %.1fs and %.1fs: the wait was not cut", dur, floor, floor+6)
 	}
@@ -210,16 +216,8 @@ steps:
 	if err := film.Join([]string{a, b}, out, true); err != nil {
 		t.Fatal(err)
 	}
-	duration := func(dir string) float64 {
-		o, err := exec.Command("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", filepath.Join(dir, "demo.mp4")).Output()
-		if err != nil {
-			t.Fatal(err)
-		}
-		d, _ := strconv.ParseFloat(strings.TrimSpace(string(o)), 64)
-		return d
-	}
-	want := duration(a) + duration(b) + 2*film.CardTime(4).Seconds()
-	if got := duration(out); got < want-0.5 || got > want+0.5 {
+	want := videoDuration(t, a) + videoDuration(t, b) + 2*film.CardTime(4).Seconds()
+	if got := videoDuration(t, out); got < want-0.5 || got > want+0.5 {
 		t.Errorf("joined duration %.2fs, want %.2fs (both films and two cards)", got, want)
 	}
 	md, err := os.ReadFile(filepath.Join(out, "chapters.md"))

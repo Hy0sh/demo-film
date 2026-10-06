@@ -1,6 +1,8 @@
 package scenario
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -85,6 +87,7 @@ func TestRules(t *testing.T) {
 		{"negative wait timeout", "      - wait: Home", "      - wait: Home\n        timeout: -1", "timeout must be positive"},
 		{"popup without url", "{click: Docs, url_contains: /docs}", "{click: Docs}", "popup needs"},
 		{"menu with one label", "[Settings, Profile]", "[Settings]", "menu needs exactly"},
+		{"open in a terminal demo", "base_url: http://localhost:3000", "terminal: {shell: sh}", "open would restart it"},
 		{"nth on a row click", "{row: Ada, button: Edit}", "{row: Ada, button: Edit, nth: 1}", "nth goes with text or {role, name}"},
 		{"text and role together", "{role: button, name: Edit}", "{role: button, name: Edit, text: Edit}", "click is a text"},
 		{"last click is a forward button", "      - confirm: Discard", "      - click: Suivant", "forward button"},
@@ -191,6 +194,25 @@ func TestFieldRankAndLabel(t *testing.T) {
 	}
 	if do[4].Nth == nil || *do[4].Nth != -2 || do[5].Button != "Edit" || do[9].Within != "dialog" {
 		t.Errorf("click shapes: %+v %+v %+v", do[4], do[5], do[9])
+	}
+}
+
+func TestPathsAreRelativeToTheScenario(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "logo.png"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	y := "title: T\nterminal: {cwd: work}\nwatermark: {image: logo.png}\nsteps:\n  - caption: c\n    do: [{press: Enter}]\n    expect: e\n"
+	path := filepath.Join(dir, "demo.yaml")
+	if err := os.WriteFile(path, []byte(y), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	s, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.Terminal.Cwd != filepath.Join(dir, "work") || s.Watermark.Image != filepath.Join(dir, "logo.png") {
+		t.Errorf("cwd %q, image %q: want both under %s", s.Terminal.Cwd, s.Watermark.Image, dir)
 	}
 }
 

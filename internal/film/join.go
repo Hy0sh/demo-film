@@ -13,8 +13,6 @@ import (
 	"time"
 
 	"github.com/mxschmitt/playwright-go"
-
-	"github.com/Hy0sh/demo-film/internal/preflight"
 )
 
 //go:embed title_card.html
@@ -32,6 +30,10 @@ func cardHTML(title string, height int) (string, error) {
 	return b.String(), err
 }
 
+// fps is the frame rate join brings every input to, the one Playwright
+// records at, so the films go through untouched and the cards match them.
+const fps = 25
+
 // cardBase is how long a title card shows at speed 1.
 const cardBase = 1500 * time.Millisecond
 
@@ -44,6 +46,7 @@ func CardTime(speed float64) time.Duration {
 // piece is the output of one film, as join reads it back.
 type piece struct {
 	dir           string
+	video         string // absolute: a dir named "-x" is no ffmpeg option
 	title         string
 	rows          []string // chapters.md table rows
 	width, height int
@@ -97,12 +100,12 @@ func Join(dirs []string, outDir string, cards bool) error {
 	n := 0
 	for i, p := range pieces {
 		if cards {
-			args = append(args, "-loop", "1", "-framerate", "25", "-t", fmt.Sprintf("%.3f", card.Seconds()), "-i", pngs[i])
-			fmt.Fprintf(&filter, "[%d:v]fps=25,format=yuv420p,setsar=1[p%d];", n, n)
+			args = append(args, "-loop", "1", "-framerate", strconv.Itoa(fps), "-t", fmt.Sprintf("%.3f", card.Seconds()), "-i", pngs[i])
+			fmt.Fprintf(&filter, "[%d:v]fps=%d,format=yuv420p,setsar=1[p%d];", n, fps, n)
 			n++
 		}
-		args = append(args, "-i", filepath.Join(p.dir, "demo.mp4"))
-		fmt.Fprintf(&filter, "[%d:v]fps=25,format=yuv420p,setsar=1[p%d];", n, n)
+		args = append(args, "-i", p.video)
+		fmt.Fprintf(&filter, "[%d:v]fps=%d,format=yuv420p,setsar=1[p%d];", n, fps, n)
 		n++
 	}
 	for i := range n {
@@ -110,10 +113,10 @@ func Join(dirs []string, outDir string, cards bool) error {
 	}
 	fmt.Fprintf(&filter, "concat=n=%d[out]", n)
 	args = append(args, "-filter_complex", filter.String(), "-map", "[out]")
-	if err := ffmpeg(append(args, encodeArgs(pieces[0].speed, filepath.Join(outDir, "demo.mp4"))...)...); err != nil {
+	if err := ffmpeg(append(args, encodeArgs(pieces[0].speed, filepath.Join(tmp, "demo.mp4"))...)...); err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(outDir, "chapters.md"), []byte(joinChapters(pieces, card)), 0o644)
+	return publish(tmp, outDir, joinChapters(pieces, card))
 }
 
 func abs(p string) string {
@@ -127,7 +130,7 @@ func abs(p string) string {
 // readPiece reads a film's output directory: chapters.md for the title and
 // the steps, ffprobe on demo.mp4 for the format, the speed and the length.
 func readPiece(dir string) (piece, error) {
-	p := piece{dir: dir}
+	p := piece{dir: dir, video: filepath.Join(abs(dir), "demo.mp4")}
 	md, err := os.ReadFile(filepath.Join(dir, "chapters.md"))
 	if err != nil {
 		return p, fmt.Errorf("%s: not the output of a film: %w", dir, err)
@@ -142,7 +145,7 @@ func readPiece(dir string) (piece, error) {
 	}
 	out, err := exec.Command("ffprobe", "-v", "error", "-select_streams", "v:0",
 		"-show_entries", "stream=codec_name,width,height,pix_fmt:format=duration:format_tags="+speedTag,
-		"-of", "default=nw=1", filepath.Join(dir, "demo.mp4")).Output()
+		"-of", "default=nw=1", p.video).Output()
 	if err != nil {
 		return p, fmt.Errorf("%s: ffprobe demo.mp4: %w", dir, err)
 	}
@@ -185,15 +188,11 @@ func sameFormat(first, p piece) error {
 
 // renderCards draws each film's title card, at the films' frame size.
 func renderCards(pieces []piece, dir string) ([]string, error) {
-	pw, err := playwright.Run(&playwright.RunOptions{Verbose: false})
+	pw, browser, err := startBrowser()
 	if err != nil {
-		return nil, preflight.Browser(err)
+		return nil, err
 	}
 	defer pw.Stop()
-	browser, err := pw.Chromium.Launch()
-	if err != nil {
-		return nil, preflight.Browser(err)
-	}
 	defer browser.Close()
 	w, h := pieces[0].width, pieces[0].height
 	page, err := browser.NewPage(playwright.BrowserNewPageOptions{Viewport: &playwright.Size{Width: w, Height: h}})
@@ -223,7 +222,9 @@ func renderCards(pieces []piece, dir string) ([]string, error) {
 var chapterRow = regexp.MustCompile(`^(\| \d+ \| (?:[^|\\]|\\.)* \| )(\d+):(\d\d)( \|.*)$`)
 
 // joinChapters renders the joined chapters.md: one section per film, each
-// row's time shifted by the cards and films before it.
+// row's time shifted by the cards and films before it. A row's own time is
+// read back to the second from its chapters.md, so a joined time may be up
+// to a second early; the shift itself is exact, the error never adds up.
 func joinChapters(pieces []piece, card time.Duration) string {
 	var b strings.Builder
 	var at time.Duration

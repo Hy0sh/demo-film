@@ -19,25 +19,36 @@ type session struct {
 	t0      time.Time // when the page, hence the video, started
 }
 
-// launch starts Chromium. A non-empty videoDir records the page there.
-func launch(s *scenario.Scenario, videoDir string) (*session, error) {
+// startBrowser starts the Playwright driver and a headless Chromium with
+// those command-line arguments.
+func startBrowser(args ...string) (*playwright.Playwright, playwright.Browser, error) {
 	pw, err := playwright.Run(&playwright.RunOptions{Verbose: false})
 	if err != nil {
-		return nil, preflight.Browser(err)
+		return nil, nil, preflight.Browser(err)
 	}
-	var launchOpts playwright.BrowserTypeLaunchOptions
+	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{Args: args})
+	if err != nil {
+		pw.Stop()
+		return nil, nil, preflight.Browser(err)
+	}
+	return pw, browser, nil
+}
+
+// launch starts Chromium. A non-empty videoDir records the page there;
+// creds, when set, answer the HTTP authentication of the page (a terminal).
+func launch(s *scenario.Scenario, videoDir string, creds *playwright.HttpCredentials) (*session, error) {
+	var args []string
 	if s.Locale != "" {
 		// Native inputs (dates, months) are formatted in the browser
 		// process's language, which the context's locale does not reach.
-		launchOpts.Args = []string{"--lang=" + s.Locale}
+		args = append(args, "--lang="+s.Locale)
 	}
-	browser, err := pw.Chromium.Launch(launchOpts)
+	pw, browser, err := startBrowser(args...)
 	if err != nil {
-		pw.Stop()
-		return nil, preflight.Browser(err)
+		return nil, err
 	}
 	vp := &playwright.Size{Width: s.Viewport.Width, Height: s.Viewport.Height}
-	opts := playwright.BrowserNewContextOptions{Viewport: vp}
+	opts := playwright.BrowserNewContextOptions{Viewport: vp, HttpCredentials: creds}
 	if s.Locale != "" {
 		// The browser's own locale formats native inputs (dates, months) and
 		// sets Accept-Language, as i18next alone cannot.

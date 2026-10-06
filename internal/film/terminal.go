@@ -1,7 +1,9 @@
 package film
 
 import (
+	"crypto/rand"
 	_ "embed"
+	"encoding/hex"
 	"fmt"
 	"net"
 	"net/http"
@@ -11,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/mxschmitt/playwright-go"
 
 	"github.com/Hy0sh/demo-film/internal/preflight"
 	"github.com/Hy0sh/demo-film/internal/scenario"
@@ -29,52 +33,67 @@ var ttydOptions = []string{
 	"disableLeaveAlert=true",
 }
 
-// withTerminal serves the scenario's shell with ttyd, on the loopback only
-// (the shell is writable), and returns a copy of the scenario pointed at it
-// whose step 1 opens it first, so it loads off camera. A web scenario is
+// withTerminal serves the scenario's shell with ttyd and returns a copy of
+// the scenario pointed at it whose step 1 opens it first, so it loads off
+// camera, with the credentials the browser needs. A web scenario is
 // returned as is. stop ends ttyd, hence the shell.
-func withTerminal(s *scenario.Scenario) (_ *scenario.Scenario, stop func(), err error) {
+//
+// The shell is writable, so ttyd listens on the loopback only, checks the
+// origin of the WebSocket, and asks for a password made for this run: no
+// other process or user of the machine gets the shell.
+func withTerminal(s *scenario.Scenario) (_ *scenario.Scenario, _ *playwright.HttpCredentials, stop func(), err error) {
 	if s.Terminal == nil {
-		return s, func() {}, nil
+		return s, nil, func() {}, nil
 	}
 	if err := preflight.TTYD(); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
+	shell := s.Terminal.Shell
+	if shell == "" {
+		shell = os.Getenv("SHELL")
+	}
+	if strings.TrimSpace(shell) == "" {
+		return nil, nil, nil, fmt.Errorf("terminal: no shell to run, set terminal.shell (SHELL is not set either)")
+	}
+	secret := make([]byte, 16)
+	if _, err := rand.Read(secret); err != nil {
+		return nil, nil, nil, err
+	}
+	creds := &playwright.HttpCredentials{Username: "demo-film", Password: hex.EncodeToString(secret)}
 	port, err := freePort()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	// -q: ttyd exits once the browser is gone, even when demo-film is killed
 	// before stop runs, so no writable shell outlives the run.
-	args := []string{"-i", "127.0.0.1", "-p", strconv.Itoa(port), "-W", "-O", "-q"}
+	args := []string{"-i", "127.0.0.1", "-p", strconv.Itoa(port), "-W", "-O", "-q",
+		"-c", creds.Username + ":" + creds.Password}
 	for _, o := range ttydOptions {
 		args = append(args, "-t", o)
 	}
 	if s.Terminal.Cwd != "" {
 		args = append(args, "-w", expandHome(s.Terminal.Cwd))
 	}
-	shell := s.Terminal.Shell
-	if shell == "" {
-		shell = os.Getenv("SHELL")
-	}
-	args = append(args, strings.Fields(shell)...)
+	// sh parses the command line, quotes included, and exec leaves the
+	// shell alone under ttyd.
+	args = append(args, "sh", "-c", "exec "+shell)
 	cmd := exec.Command("ttyd", args...)
 	if err := cmd.Start(); err != nil {
-		return nil, nil, fmt.Errorf("ttyd: %w", err)
+		return nil, nil, nil, fmt.Errorf("ttyd: %w", err)
 	}
 	stop = func() { cmd.Process.Kill(); cmd.Wait() }
 
 	url := fmt.Sprintf("http://127.0.0.1:%d", port)
 	if err := waitUp(url, 10*time.Second); err != nil {
 		stop()
-		return nil, nil, fmt.Errorf("ttyd: %w", err)
+		return nil, nil, nil, fmt.Errorf("ttyd: %w", err)
 	}
 	t := *s
 	t.BaseURL = url
 	first := t.Steps[0]
 	first.Do = append([]scenario.Action{{Kind: scenario.Open, Text: "/"}}, first.Do...)
 	t.Steps = append([]scenario.Step{first}, t.Steps[1:]...)
-	return &t, stop, nil
+	return &t, creds, stop, nil
 }
 
 // freePort asks the system for a free loopback port.

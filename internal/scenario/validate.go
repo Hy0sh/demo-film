@@ -110,6 +110,9 @@ func Validate(s *Scenario) []string {
 			for _, m := range validateAction(a) {
 				step("%s: %s", a, m)
 			}
+			if a.Kind == Open && s.Terminal != nil {
+				step("%s: a terminal demo opens its shell by itself; open would restart it", a)
+			}
 			if a.Kind == Open && baseOrigin != "" {
 				abs, err := ResolveURL(s.BaseURL, a.Text)
 				if err != nil {

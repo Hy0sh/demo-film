@@ -25,12 +25,12 @@ func Film(s *scenario.Scenario, outDir string) error {
 	}
 	defer os.RemoveAll(tmp) // raw webm and caption PNGs
 
-	s, stop, err := withTerminal(s)
+	s, creds, stop, err := withTerminal(s)
 	if err != nil {
 		return err
 	}
 	defer stop()
-	ses, err := launch(s, tmp)
+	ses, err := launch(s, tmp, creds)
 	if err != nil {
 		return err
 	}
@@ -130,8 +130,8 @@ func Film(s *scenario.Scenario, outDir string) error {
 		filter += WatermarkFilter(len(pngs), last, w.Position, w.Opacity, s.Viewport.Height)
 		last++
 	}
-	if err := assemble(raw, offset, pngs, filter, filepath.Join(outDir, "demo.mp4"), last, s.Speed); err != nil {
+	if err := assemble(raw, offset, pngs, filter, filepath.Join(tmp, "demo.mp4"), last, s.Speed); err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(outDir, "chapters.md"), []byte(Chapters(s.Title, chapters)), 0o644)
+	return publish(tmp, outDir, Chapters(s.Title, chapters))
 }
