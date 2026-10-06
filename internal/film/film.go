@@ -117,7 +117,20 @@ func Film(s *scenario.Scenario, outDir string) error {
 		keep = append(keep, Window{from, (end + r.cutTotal() + 2*time.Second).Seconds()})
 	}
 	filter := Filter(s.Viewport.Width, s.Viewport.Height, keep, windows)
-	if err := assemble(raw, offset, pngs, filter, filepath.Join(outDir, "demo.mp4"), len(windows)); err != nil {
+	last := len(windows)
+	if w := s.Watermark; w != nil {
+		img := w.Image
+		if w.Text != "" {
+			img = filepath.Join(tmp, "watermark.png")
+			if err := renderWatermark(band, w.Text, img); err != nil {
+				return err
+			}
+		}
+		pngs = append(pngs, img)
+		filter += WatermarkFilter(len(pngs), last, w.Position, w.Opacity, s.Viewport.Height)
+		last++
+	}
+	if err := assemble(raw, offset, pngs, filter, filepath.Join(outDir, "demo.mp4"), last, s.Speed); err != nil {
 		return err
 	}
 	return os.WriteFile(filepath.Join(outDir, "chapters.md"), []byte(Chapters(s.Title, chapters)), 0o644)

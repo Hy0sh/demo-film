@@ -3,6 +3,7 @@ package scenario
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -66,6 +67,23 @@ func Validate(s *Scenario) []string {
 	}
 	if len(s.Steps) == 0 {
 		add("steps is empty")
+	}
+	if w := s.Watermark; w != nil {
+		if (w.Image == "") == (w.Text == "") {
+			add("watermark needs exactly one of image or text")
+		} else if w.Image != "" {
+			if _, err := os.Stat(w.Image); err != nil {
+				add("watermark: %v", err)
+			}
+		}
+		switch w.Position {
+		case "top-left", "top-right", "bottom-left", "bottom-right":
+		default:
+			add("watermark: position %q is not top-left, top-right, bottom-left or bottom-right", w.Position)
+		}
+		if w.Opacity <= 0 || w.Opacity > 1 {
+			add("watermark: opacity must be between 0 and 1")
+		}
 	}
 
 	current := baseOrigin

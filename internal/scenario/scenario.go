@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
@@ -30,9 +31,19 @@ type Scenario struct {
 	// Speed scales the whole video, gestures (cursor travel, pauses around
 	// actions, typing) and caption read/hold times: 1 is the default, 0.5
 	// twice as slow, 2 twice as fast.
-	Speed  float64 `yaml:"speed"`
-	Labels Labels  `yaml:"labels"`
-	Steps  []Step  `yaml:"steps"`
+	Speed     float64    `yaml:"speed"`
+	Labels    Labels     `yaml:"labels"`
+	Watermark *Watermark `yaml:"watermark"`
+	Steps     []Step     `yaml:"steps"`
+}
+
+// Watermark signs the whole video: an image or a line of text, in a corner
+// of the page area, never over the caption band.
+type Watermark struct {
+	Image    string  `yaml:"image"` // relative to the scenario file
+	Text     string  `yaml:"text"`
+	Position string  `yaml:"position"` // top-left, top-right, bottom-left, bottom-right
+	Opacity  float64 `yaml:"opacity"`  // 0 to 1
 }
 
 // Terminal is the shell a terminal demo films, served in the browser by ttyd.
@@ -93,6 +104,14 @@ func Parse(data []byte) (*Scenario, error) {
 	if s.Labels.Later == "" {
 		s.Labels.Later = "later"
 	}
+	if w := s.Watermark; w != nil {
+		if w.Position == "" {
+			w.Position = "bottom-right"
+		}
+		if w.Opacity == 0 {
+			w.Opacity = 0.6
+		}
+	}
 	return &s, nil
 }
 
@@ -106,6 +125,9 @@ func Load(path string) (*Scenario, error) {
 	s, err := Parse(data)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
+	}
+	if w := s.Watermark; w != nil && w.Image != "" && !filepath.IsAbs(w.Image) {
+		w.Image = filepath.Join(filepath.Dir(path), w.Image)
 	}
 	if errs := Validate(s); len(errs) > 0 {
 		return nil, ValidationError{Path: path, Errs: errs}

@@ -40,11 +40,31 @@ Shell completion (bash/zsh/fish/powershell) comes from Cobra:
 | `demo-film check <scenario.yaml>` | validates the scenario, no browser; exit 1 with every problem listed |
 | `demo-film rehearse <scenario.yaml> [-o dir]` | plays every step with no pause and no video, asserting `see`; on failure exit 1, names the step and writes `rehearse-fail-step<N>.png` (full page) in `dir` (default: the current directory) |
 | `demo-film film <scenario.yaml> -o <dir>` | records `<dir>/demo.mp4` and `<dir>/chapters.md`; a failing step aborts and writes nothing |
+| `demo-film join <dir> <dir>... -o <dir>` | joins the outputs of several `film` runs, in order, into one `demo.mp4` and `chapters.md`; see below |
 | `demo-film install` | installs the Playwright driver and Chromium |
 | `demo-film --version` | prints the version |
 
 Rehearse first, film when it is green. Pass the full scenario through
 `check` while writing it.
+
+### A long film in parts
+
+Film a long demo as one scenario per part, then join them: a rehearsal
+that fails replays only its part, a failing film loses only its part, and
+each part starts in a fresh browser, which is how a demo changes accounts.
+
+```sh
+demo-film film agent.yaml -o parts/1
+demo-film film citizen.yaml -o parts/2
+demo-film join parts/1 parts/2 -o final
+```
+
+`join` puts a title card with the scenario's `title` before each part
+(1.5 s divided by `speed`, at least 1.2 s; `--no-cards` drops them), and
+writes a `chapters.md` with one section per part, its times shifted by
+what comes before it. Parts that differ in frame size, codec or `speed` are
+refused, naming the part at fault. It re-encodes the whole film. Steps keep
+their per-part numbering.
 
 ## Scenario
 
@@ -62,6 +82,10 @@ labels:                               # optional, English defaults shown
   check: check                        #   "Step 2/5 · check E3"
   see: "You should see:"
   later: later                        #   "⏩ 2:14 later", after a cut
+watermark:                            # optional, signs the whole video
+  text: "© Some Co"                   #   or image: logo.png (relative to this file)
+  position: bottom-right              #   top-left, top-right, bottom-left, bottom-right
+  opacity: 0.6                        #   default
 steps:
   - caption: string                   # shown BEFORE the actions
     check: string                     # optional tag of the acceptance point, e.g. "E3"
@@ -106,6 +130,10 @@ steps:
   filming (dev toolbars, debug overlays).
 - `labels` lets a demo speak another language without hardcoding it, e.g.
   `{step: "Étape", check: "vérifie", see: "Tu dois voir :"}`.
+- `watermark` lays an image, or a line of white shadowed text, 24 px from a
+  corner of the page area for the whole video; it never covers the caption
+  band. The image is used at its own size. `join` leaves its title cards
+  bare: each part carries its own watermark.
 
 ### Actions
 
