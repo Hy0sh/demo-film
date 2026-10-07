@@ -6,6 +6,13 @@ bump carries new commands or new behaviour, a patch bump carries fixes.
 
 ## [Unreleased]
 
+### Fixed
+
+- A `film` or `join` stopped by Ctrl-C or SIGTERM left its working
+  directory, `.demo-film-*` with the raw video and the caption images, next
+  to the output: the signal killed demo-film before it removed it. The
+  signal now removes it too.
+
 ## [0.6.0] - 2026-10-07
 
 ### Changed

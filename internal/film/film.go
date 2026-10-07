@@ -19,11 +19,11 @@ func Film(s *scenario.Scenario, outDir string) error {
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		return err
 	}
-	tmp, err := os.MkdirTemp(outDir, ".demo-film-")
+	tmp, done, err := tempDir(outDir)
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(tmp) // raw webm and caption PNGs
+	defer done() // raw webm and caption PNGs
 
 	s, creds, stop, err := withTerminal(s)
 	if err != nil {

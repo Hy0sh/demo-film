@@ -80,11 +80,11 @@ func Join(dirs []string, outDir string, cards bool) error {
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		return err
 	}
-	tmp, err := os.MkdirTemp(outDir, ".demo-film-")
+	tmp, done, err := tempDir(outDir)
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(tmp) // card PNGs
+	defer done() // card PNGs
 
 	card := time.Duration(0)
 	var pngs []string
